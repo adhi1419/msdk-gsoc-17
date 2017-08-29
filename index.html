@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>GSoC '17 - MSDK-IO Library</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+    <!-- Custom styles for this template -->
+    <link href="css/clean-blog.min.css" rel="stylesheet">
+
+  </head>
+
+  <body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+      <div class="container">
+        <a class="navbar-brand" href="index.html">Home</a>
+        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          Menu
+          <i class="fa fa-bars"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="contact.html">Contact</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('img/home-bg.jpg')">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>MSDK-IO Libray</h1>
+              <h2 class="subheading">Native Java parsers and writers providing a common API for sequential and random access to MS data</h2>
+              <span class="meta">Posted by
+                <a href="https://github.com/adhi1419">Adhithya R</a>
+                on August 29, 2017</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <h2 class="section-heading">Introduction</h2>
+
+            <p>Mass Spectrometry Development Kit (MSDK; <a href="http://msdk.github.io">http://msdk.github.io</a> ) is a Java library of
+            algorithms for processing mass spectrometry data. It provides a flexible data model with Java
+            interfaces for mass-spectrometry related objects, including raw spectra, processed data sets,
+            identifications, etc. The goal of MSDK is to integrate multiple existing algorithms that are
+            currently scattered around various Java-based graphical mass spectrometry tools (MZmine,
+            Maltcms, MassCascade, Guineu, mzMatch, OpenChrom, mzJava, and others).</p>
+
+            <p>There are many file formats in use for mass spectrometry data. For interoperability of 
+            algorithms in Java-based processing workflows, there was an urgent need for a high-performance 
+            Java library that would provide support for reading and writing these common formats. In the 
+            past, several projects have developed custom parsers for various formats. However, none of the 
+            existing libraries provide a high-performance, random access to the data. </p>
+
+            <p>As a part of my <b>Google Summer of Code 2017</b> project, I along with the help of my mentors
+            <a href="https://github.com/tomas-pluskal">Tomáš Pluskal</a>, <a href="https://github.com/chhh">
+            Dmitry Avtonomov</a> and <a href="https://github.com/TDI-tenderholt">Adam Tenderholt</a>, built 
+            native Java parsers with the ability to read data randomly from the files of formats - 
+            mzML, mzXML and netCDF. As a part of this project, we also added functionality to the API to write
+            to these formats which enables us to intercovert the data from one format to another.</p>
+
+            
+            <h2 class="section-heading">Description</h2>
+            
+            <p><a href="https://github.com/msdk/msdk/tree/master/msdk-io/msdk-io-mzml"><b>The mzML file parser and writer</b></a></p>
+            
+            <p>MSDK's mzML IO package package whcih existed before the start of this project used a library called
+            jmzML to parse the data. However, it could only read the data sequentially and was very slow.</p>
+
+            <p>We, started working on a new mzML parser which could make up for the drawbacks of the existing one.
+            The new parser converts the give input mzML data into a stream, and the metadata is parsed first alongside, 
+            the position of the intensity, m/z and retention times arrays are noted. Later, this data is further parsed
+            on-demand. All these operations are done without converting the stream to save computational time and memory.</p>
+
+            <p>A working mzML file writer which writes out indexed mzML files along with the checksum can also be found in this
+            package</p>
+
+            <p><a href="https://github.com/msdk/msdk/tree/master/msdk-io/msdk-io-mzxml"><b>The mzXML file parser</b></a></p>
+
+            <p>The old mzXML parser present in the MSDK used a different parsing algorithm. A new parser which reads the data
+            as a stream was used and added to the package.</p>
+
+            <p><a href="https://github.com/msdk/msdk/tree/master/msdk-io/msdk-io-netcdf"><b>The netCDF file parser and writer</b></a></p>
+
+            <p>Random access support was added to the existing netCDF parser and a new netCDF writer was built and added to the package. </p>
+
+            <p><b>Others</b></p>
+
+            <p>As a part of this project, we had to make a few changes to the XML parsing and writing API itself to suit our needs. You can find
+            the API here - <a href="https://github.com/chhh/javolution-msftbx">Javolution MSFTBX</a></p>
+
+
+            <h2 class="section-heading">Useful links</h2>
+
+            <a href="https://github.com/msdk/msdk/commits?author=adhi1419">Commits to main repo during the project</a>
+            </br>
+            <a href="https://github.com/msdk/msdk/pulls?utf8=%E2%9C%93&q=is%3Apr%20is%3Aclosed%20no%3Aassignee%20author%3Aadhi1419">Pull Requests opened during the project</a>
+            </br>
+            <a href="https://github.com/msdk/msdk/tree/master/msdk-io/msdk-io-mzxml/src/main/java/io/github/msdk/io">MSDK-IO Library</a>
+            </br>
+            <a href="https://github.com/msdk/msdk-io-tests/">Test Cases for the library</a>
+            </br>
+            
+
+            <h2 class="section-heading">Future Work</h2>
+
+            <ul>
+              <li>IO Modules for the following formats -</li>
+              <ul>
+                <li>imzML</li>
+                <li>mz5</li>
+                <li>mzDB</li>
+              </ul>
+              <li>IO Modules for the following feature list formats -</li>
+              <ul>
+                <li>mzTab</li>
+                <li>featureXML</li>
+                <li>peakML</li>
+              </ul>
+              <li>Multi-threading support for existing modules</li>
+              <li>Support for raw vendor formats</li>
+              <li>On-disk caching for better performance</li>
+            </ul>
+          
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <ul class="list-inline text-center">
+              <li class="list-inline-item">
+                <a href="https://twitter.com/adhi1419">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li class="list-inline-item">
+                <a href="https://www.facebook.com/adhithya.rajagopal">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li class="list-inline-item">
+                <a href="https://github.com/adhi1419">
+                  <span class="fa-stack fa-lg">
+                    <i class="fa fa-circle fa-stack-2x"></i>
+                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+<!--             <p class="copyright text-muted">Copyright &copy; Your Website 2017</p>
+ -->          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/popper/popper.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="js/clean-blog.min.js"></script>
+
+  </body>
+
+</html>
