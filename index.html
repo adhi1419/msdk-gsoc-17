@@ -83,7 +83,7 @@
             <p>As a part of my <b>Google Summer of Code 2017</b> project, I along with the help of my mentors
             <a href="https://github.com/tomas-pluskal">Tomáš Pluskal</a>, <a href="https://github.com/chhh">
             Dmitry Avtonomov</a> and <a href="https://github.com/TDI-tenderholt">Adam Tenderholt</a>, built 
-            native Java parsers with the ability to read data randomly from the files of formats - 
+            native Java parsers with the ability to read using random access from the files of formats - 
             mzML, mzXML and netCDF. As a part of this project, we also added functionality to the API to write
             to these formats which enables us to interconvert the data from one format to another.</p>
 
@@ -115,8 +115,17 @@
             <p><b>Others</b></p>
 
             <p>As a part of this project, we had to make a few changes to the XML parsing and writing API itself to suit our needs. You can find
-            the API here - <a href="https://github.com/chhh/javolution-msftbx">Javolution MSFTBX</a></p>
+            the API here - <a href="https://github.com/chhh/javolution-msftbx">Javolution MSFTBX</a>.</p>
 
+            <p>The existing Javolution XML writing API doesn't have the ability to get the location in the file it is writing to. Since, it is 
+            important to track the current position to store the indices of the scans, we added fields to the XML writer to track the location,
+            which enabled us to support exporting of indexed mzML files.</p>
+
+            <p><b>Testing</b></p>
+
+            <p>It is very important to test the IO library extensively, because, it is very easy for something working improperly to go unnoticed.
+            So, apart from the test cases included in the main MSDK project, we setup a separate repository with big data sets to allow testing
+            with a higher number of files.</p>            
 
             <h2 class="section-heading">Useful links</h2>
 
