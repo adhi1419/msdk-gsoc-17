@@ -124,15 +124,64 @@
             <p><b>Testing</b></p>
 
             <p>Aapart from the test cases included in the main MSDK project, we setup a separate <a href="https://github.com/msdk/msdk-io-tests/">repository</a> 
-            with big data sets to allow testing with a higher number of files. The JUnit test cases coverage results are as follows - </p>
+            with big data sets to allow testing with a higher number of files. The data parsed by the new parsers was asserted by comparing it with the actual 
+            value found in the file or the results obtained by old parser. The JUnit test cases coverage results are as follows - </p>
             <li><a href="mzml-import/index.html">MzML file import</a></li> 
             <li><a href="mzml-export/index.html">MzML file export</a></li>          
             <li><a href="mzxml-import/index.html">MzXML file import</a></li>          
             <li><a href="netcdf-import/index.html">NetCDF file import</a></li>          
-            <li><a href="netcdf-export/index.html">NetCDF file export</a></li>          
-         
+            <li><a href="netcdf-export/index.html">NetCDF file export</a></li>
 
-            
+            <p>Benchmark comparisions for the old MzML parser vs the new MzML parser was conducted. The runtimes correspond to that of the same JUnit tests and
+            was averaged over 10 runs. The results are as follows -</p>
+             <table style="width:110%">
+              <tr>
+                <th>Test File</th>
+                <th>Runtime with old parser (ms)</th>
+                <th>Runtime with new parser (ms)</th>
+              </tr>
+              <tr>
+                <td><a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/5peptideFT.mzML">5peptideFT.mzml</a></td>
+                <td>361</td>
+                <td>97</td>
+              </tr>
+              <tr>
+                <td>MzMLFile_7.mzml (<a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/MzMLFile_7_compressed.mzML">Compressed</a> and <a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/MzMLFile_7_uncompressed.mzML">uncompressed</a>)</td>
+                <td>58</td>
+                <td>8</td>
+              </tr>
+              <tr>
+                <td><a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/emptyScan.mzML">emptyScan.mzml</a></td>
+                <td>37</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td><a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/mzML_with_UV.mzML">mzML_with_UV.mzml</a></td>
+                <td>274</td>
+                <td>198</td>
+              </tr>
+              <tr>
+                <td><a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/RawCentriodCidWithMsLevelInRefParamGroup.mzML">RawCentriodCidWithMsLevelInRefParamGroup.mzml</a></td>
+                <td>225</td>
+                <td>44</td>
+              </tr>
+              <tr>
+                <td><a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/tiny.pwiz.mzML">tiny.pwiz.mzml</a></td>
+                <td>18</td>
+                <td>15</td>
+              </tr>
+              <tr>
+                <td><a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/SRM.mzML">SRM.mzml</a></td>
+                <td>114</td>
+                <td>47</td>
+              </tr>
+              <tr>
+                <td><a href="https://raw.githubusercontent.com/msdk/msdk/master/msdk-io/msdk-io-mzml/src/test/resources/MzValues_Zlib+Numpress.mzML">MzValues_Zlib+Numpress.mzml</a></td>
+                <td>77</td>
+                <td>46</td>
+              </tr>
+            </table> 
+                     
             <h2 class="section-heading">Future Work</h2>
 
             <ul>
