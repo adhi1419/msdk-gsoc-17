@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ChromatogramUtil.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.util</a> &gt; <span class="el_source">ChromatogramUtil.java</span></div><h1>ChromatogramUtil.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*</span>
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.util;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Range;
+
+
+/**
+ * &lt;p&gt;
+ * ChromatogramUtil class.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L28">public class ChromatogramUtil {</span>
+
+
+  /**
+   * Returns median m/z value of the chromatogram
+   *
+   * @param mzValues an array of double.
+   * @param size a {@link java.lang.Integer} object.
+   * @return a {@link java.lang.Double} object.
+   */
+  @Nullable
+  public static Double getMedianMz(@Nonnull double mzValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L42">    Preconditions.checkNotNull(mzValues);</span>
+<span class="nc" id="L43">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L44">    Preconditions.checkPositionIndex(size, mzValues.length);</span>
+
+<span class="nc bnc" id="L46" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L47">      return null;</span>
+
+<span class="nc" id="L49">    Double mz = MathUtils.calcQuantile(mzValues, size, 0.5f);</span>
+<span class="nc" id="L50">    return mz;</span>
+
+  }
+
+  /**
+   * Returns the RT range
+   *
+   * @return a {@link com.google.common.collect.Range} object.
+   * @param rtValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   */
+  @Nullable
+  public static Range&lt;Float&gt; getRtRange(@Nonnull float rtValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L65">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L66">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L67">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+
+<span class="nc bnc" id="L69" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L70">      return null;</span>
+
+<span class="nc" id="L72">    float min = rtValues[0];</span>
+<span class="nc" id="L73">    float max = rtValues[size - 1];</span>
+<span class="nc" id="L74">    return Range.closed(min, max);</span>
+  }
+
+  /**
+   * Returns the range of Float of all data points in this feature.
+   *
+   * @return a
+   * @param rtValues an array of
+   * @param size a
+   */
+  @Nonnull
+  public static Range&lt;Float&gt; getDataPointsChromatographyRange(@Nonnull float rtValues[],
+      @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L89">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L90">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L91">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+
+<span class="nc" id="L93">    final Range&lt;Float&gt; chromatographyRange = Range.closed(rtValues[0], rtValues[size - 1]);</span>
+<span class="nc" id="L94">    return chromatographyRange;</span>
+  }
+
+  /**
+   * Returns the range of intensity values of all data points in this chromatogram.
+   *
+   * @return a
+   * @param intensityValues an array of
+   * @param size a
+   */
+  public static @Nullable Range&lt;Float&gt; getDataPointsIntensityRange(@Nonnull Float intensityValues[],
+      @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L108">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L109">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L110">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L112" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L113">      return null;</span>
+
+<span class="nc" id="L115">    float lower = intensityValues[0];</span>
+<span class="nc" id="L116">    float upper = intensityValues[0];</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">      if (intensityValues[i] &lt; lower)</span>
+<span class="nc" id="L119">        lower = intensityValues[i];</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">      if (intensityValues[i] &gt; upper)</span>
+<span class="nc" id="L121">        upper = intensityValues[i];</span>
+    }
+<span class="nc" id="L123">    final Range&lt;Float&gt; intensityRange = Range.closed(lower, upper);</span>
+<span class="nc" id="L124">    return intensityRange;</span>
+  }
+
+  /**
+   * Calculates the m/z value of the chromatogram based on the list of m/z values
+   */
+<span class="nc" id="L130">  public enum CalculationMethod {</span>
+<span class="nc" id="L131">    allAverage, allMedian, fwhmAverage, fwhmMedian</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * calculateMz.
+   * &lt;/p&gt;
+   *
+   * @param intensityValues an array of float.
+   * @param mzValues an array of double.
+   * @param method a
+   * @return a
+   * @param size a
+   */
+  public static @Nullable Double calculateMz(@Nonnull double[] mzValues,
+      @Nonnull float[] intensityValues, @Nonnull Integer size, @Nonnull CalculationMethod method) {
+
+    // Parameter check
+<span class="nc" id="L149">    Preconditions.checkNotNull(mzValues);</span>
+<span class="nc" id="L150">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L151">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L152">    Preconditions.checkPositionIndex(size, mzValues.length);</span>
+<span class="nc" id="L153">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L155" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L156">      return null;</span>
+
+<span class="nc" id="L158">    double newMz = 0;</span>
+<span class="nc" id="L159">    double sum = 0;</span>
+<span class="nc" id="L160">    int values = 0;</span>
+
+<span class="nc bnc" id="L162" title="All 4 branches missed.">    switch (method) {</span>
+      case allAverage:
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">          if (mzValues[i] &gt; 0) {</span>
+<span class="nc" id="L166">            values++;</span>
+<span class="nc" id="L167">            sum = sum + mzValues[i];</span>
+          }
+        }
+<span class="nc" id="L170">        newMz = sum / values;</span>
+<span class="nc" id="L171">        break;</span>
+      case allMedian:
+<span class="nc" id="L173">        double index = Math.floor(size / 2);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (mzValues.length % 2 == 0) { // even</span>
+<span class="nc" id="L175">          sum = mzValues[(int) index] + mzValues[(int) index + 1];</span>
+<span class="nc" id="L176">          newMz = sum / 2;</span>
+<span class="nc" id="L177">        } else { // odd</span>
+<span class="nc" id="L178">          newMz = mzValues[(int) index];</span>
+        }
+<span class="nc" id="L180">        break;</span>
+      case fwhmAverage:
+        // Find the maximum intensity
+<span class="nc" id="L183">        float max = intensityValues[0];</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        for (int i = 1; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">          if (intensityValues[i] &gt; max) {</span>
+<span class="nc" id="L186">            max = intensityValues[i];</span>
+          }
+        }
+
+        // Calculate m/z
+<span class="nc bnc" id="L191" title="All 2 branches missed.">        for (int i = 0; i &lt; intensityValues.length; i++) {</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">          if (intensityValues[i] &gt; max / 2) {</span>
+<span class="nc" id="L193">            values++;</span>
+<span class="nc" id="L194">            sum = sum + mzValues[i];</span>
+          }
+        }
+<span class="nc" id="L197">        newMz = sum / values;</span>
+        break;
+      case fwhmMedian:
+        // TODO
+    }
+
+<span class="nc" id="L203">    return newMz;</span>
+  }
+
+  /**
+   * Returns the retention time of this feature.
+   *
+   * @return a float.
+   * @param rtValues an array of
+   * @param intensityValues an array of float.
+   * @param size a
+   */
+  public static @Nullable Float getRt(@Nonnull float rtValues[], @Nonnull float[] intensityValues,
+      @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L218">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L219">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L220">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L221">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+<span class="nc" id="L222">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L224" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L225">      return null;</span>
+
+    // Find the maximum intensity index
+<span class="nc" id="L228">    int max = 0;</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">    for (int i = 1; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">      if (intensityValues[i] &gt; intensityValues[max]) {</span>
+<span class="nc" id="L231">        max = i;</span>
+      }
+    }
+
+<span class="nc" id="L235">    return rtValues[max];</span>
+  }
+
+  /**
+   * Returns the start retention time of this feature.
+   *
+   * @return a Float.
+   * @param rtValues an array of
+   * @param size a
+   */
+  public static @Nullable Float getRtStart(@Nonnull float rtValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L248">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L249">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L250">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+
+<span class="nc bnc" id="L252" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L253">      return null;</span>
+
+<span class="nc" id="L255">    return rtValues[0];</span>
+  }
+
+  /**
+   * Returns the end retention time of this feature.
+   *
+   * @return a Float.
+   * @param rtValues an array of
+   * @param size a
+   */
+  public static Float getRtEnd(@Nonnull float rtValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L268">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L269">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L270">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+
+<span class="nc bnc" id="L272" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L273">      return null;</span>
+
+<span class="nc" id="L275">    return rtValues[size - 1];</span>
+
+  }
+
+  /**
+   * Returns the duration of this feature.
+   *
+   * @return a float.
+   * @param rtValues an array of
+   * @param size a
+   */
+  public static @Nullable Float getDuration(@Nonnull float rtValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L289">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L290">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L291">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+
+<span class="nc bnc" id="L293" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L294">      return null;</span>
+
+<span class="nc" id="L296">    Float start = getRtStart(rtValues, size);</span>
+<span class="nc" id="L297">    Float end = getRtEnd(rtValues, size);</span>
+
+<span class="nc bnc" id="L299" title="All 4 branches missed.">    if (start == null || end == null)</span>
+<span class="nc" id="L300">      return null;</span>
+
+<span class="nc" id="L302">    return end - start;</span>
+  }
+
+  /**
+   * Returns the maximum height of this chromatogram, or null if size == 0.
+   *
+   * @return a double.
+   * @param intensityValues an array of float.
+   * @param size a
+   */
+  public static @Nullable Float getMaxHeight(@Nonnull float[] intensityValues,
+      @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L316">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L317">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L318">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L320" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L321">      return null;</span>
+
+    // Find the maximum intensity index
+<span class="nc" id="L324">    int max = 0;</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">    for (int i = 1; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">      if (intensityValues[i] &gt; intensityValues[max]) {</span>
+<span class="nc" id="L327">        max = i;</span>
+      }
+    }
+
+<span class="nc" id="L331">    return intensityValues[max];</span>
+
+  }
+
+  /**
+   * Returns the area of this feature.
+   *
+   * @return a double.
+   * @param rtValues an array of
+   * @param intensityValues an array of float.
+   * @param size a
+   */
+  public static @Nullable Float getArea(@Nonnull float rtValues[], @Nonnull float[] intensityValues,
+      @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L347">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L348">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L349">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L350">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+<span class="nc" id="L351">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L353" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L354">      return null;</span>
+
+<span class="nc" id="L356">    float area = 0, rtDifference = 0, intensityStart = 0, intensityEnd = 0;</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">    for (int i = 0; i &lt; size - 1; i++) {</span>
+<span class="nc" id="L358">      rtDifference = rtValues[i + 1] - rtValues[i];</span>
+<span class="nc" id="L359">      intensityStart = intensityValues[i];</span>
+<span class="nc" id="L360">      intensityEnd = intensityValues[i + 1];</span>
+<span class="nc" id="L361">      area += (rtDifference * (intensityStart + intensityEnd) / 2);</span>
+    }
+<span class="nc" id="L363">    return area;</span>
+  }
+
+  /**
+   * Returns the full width at half maximum (FWHM) of this feature.
+   *
+   * @return a
+   * @param rtValues rt values
+   * @param intensityValues an array of float.
+   * @param size a
+   */
+  public static @Nullable Double getFwhm(@Nonnull float rtValues[],
+      @Nonnull float[] intensityValues, @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L378">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L379">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L380">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L381">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+<span class="nc" id="L382">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L384" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L385">      return null;</span>
+
+<span class="nc" id="L387">    Float height = getMaxHeight(intensityValues, size);</span>
+<span class="nc" id="L388">    Float rt = getRt(rtValues, intensityValues, size);</span>
+
+<span class="nc bnc" id="L390" title="All 4 branches missed.">    if (height == null || rt == null)</span>
+<span class="nc" id="L391">      return null;</span>
+
+<span class="nc" id="L393">    double rtVals[] = findRTs(height / 2, rt, rtValues, intensityValues, size);</span>
+<span class="nc" id="L394">    Double fwhm = rtVals[1] - rtVals[0];</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">    if (fwhm &lt; 0) {</span>
+<span class="nc" id="L396">      fwhm = null;</span>
+    }
+<span class="nc" id="L398">    return fwhm;</span>
+  }
+
+  /**
+   * Returns the tailing factor of this feature.
+   *
+   * @return a
+   * @param rtValues an array of
+   * @param intensityValues an array of float.
+   * @param size a
+   */
+  public static @Nullable Double getTailingFactor(@Nonnull float rtValues[],
+      @Nonnull float[] intensityValues, @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L413">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L414">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L415">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L416">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+<span class="nc" id="L417">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L419" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L420">      return null;</span>
+
+<span class="nc" id="L422">    Float height = getMaxHeight(intensityValues, size);</span>
+<span class="nc" id="L423">    Float rt = getRt(rtValues, intensityValues, size);</span>
+
+<span class="nc bnc" id="L425" title="All 4 branches missed.">    if (height == null || rt == null)</span>
+<span class="nc" id="L426">      return null;</span>
+
+<span class="nc" id="L428">    double rtVals[] = findRTs(height * 0.05, rt, rtValues, intensityValues, size);</span>
+
+<span class="nc bnc" id="L430" title="All 2 branches missed.">    if (rtVals[1] == 0)</span>
+<span class="nc" id="L431">      rtVals[1] = getRtEnd(rtValues, size);</span>
+
+<span class="nc" id="L433">    Double tf = (rtVals[1] - rtVals[0]) / (2 * (rt - rtVals[0]));</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">    if (tf &lt; 0) {</span>
+<span class="nc" id="L435">      tf = null;</span>
+    }
+<span class="nc" id="L437">    return tf;</span>
+  }
+
+  /**
+   * Returns the asymmetry factor of this feature.
+   *
+   * @return a
+   * @param rtValues an array
+   * @param intensityValues an array of float.
+   * @param size a
+   */
+  public static @Nullable Double getAsymmetryFactor(@Nonnull float rtValues[],
+      @Nonnull float[] intensityValues, @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L452">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L453">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L454">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L455">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+<span class="nc" id="L456">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc bnc" id="L458" title="All 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L459">      return null;</span>
+
+<span class="nc" id="L461">    Float height = getMaxHeight(intensityValues, size);</span>
+<span class="nc" id="L462">    Float rt = getRt(rtValues, intensityValues, size);</span>
+
+
+<span class="nc bnc" id="L465" title="All 4 branches missed.">    if (height == null || rt == null)</span>
+<span class="nc" id="L466">      return null;</span>
+
+<span class="nc" id="L468">    double rtValues3[] = findRTs(height * 0.1, rt, rtValues, intensityValues, size);</span>
+
+<span class="nc" id="L470">    Double af = (rtValues3[1] - rt) / (rt - rtValues3[0]);</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">    if (af &lt; 0) {</span>
+<span class="nc" id="L472">      af = null;</span>
+    }
+<span class="nc" id="L474">    return af;</span>
+  }
+
+  private static double[] findRTs(double intensity, float rt, @Nonnull float rtValues[],
+      @Nonnull float[] intensityValues, @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L481">    Preconditions.checkNotNull(rtValues);</span>
+<span class="nc" id="L482">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L483">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L484">    Preconditions.checkPositionIndex(size, rtValues.length);</span>
+<span class="nc" id="L485">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc" id="L487">    double lastDiff1 = intensity, lastDiff2 = intensity, currentDiff;</span>
+<span class="nc" id="L488">    double x1 = 0, x2 = 0, x3 = 0, x4 = 0, y1 = 0, y2 = 0, y3 = 0, y4 = 0, currentRT;</span>
+
+    // Find the data points closet to input intensity on both side of the
+    // apex
+<span class="nc bnc" id="L492" title="All 2 branches missed.">    for (int i = 1; i &lt; size - 1; i++) {</span>
+
+<span class="nc" id="L494">      currentDiff = Math.abs(intensity - intensityValues[i]);</span>
+<span class="nc" id="L495">      currentRT = rtValues[i];</span>
+
+<span class="nc bnc" id="L497" title="All 8 branches missed.">      if (currentDiff &lt; lastDiff1 &amp; currentDiff &gt; 0 &amp; currentRT &lt;= rt) {</span>
+<span class="nc" id="L498">        x1 = rtValues[i];</span>
+<span class="nc" id="L499">        y1 = intensityValues[i];</span>
+<span class="nc" id="L500">        x2 = rtValues[i + 1];</span>
+<span class="nc" id="L501">        y2 = intensityValues[i + 1];</span>
+<span class="nc" id="L502">        lastDiff1 = currentDiff;</span>
+<span class="nc bnc" id="L503" title="All 8 branches missed.">      } else if (currentDiff &lt; lastDiff2 &amp; currentDiff &gt; 0 &amp; currentRT &gt;= rt) {</span>
+<span class="nc" id="L504">        x3 = rtValues[i - 1];</span>
+<span class="nc" id="L505">        y3 = intensityValues[i - 1];</span>
+<span class="nc" id="L506">        x4 = rtValues[i];</span>
+<span class="nc" id="L507">        y4 = intensityValues[i];</span>
+<span class="nc" id="L508">        lastDiff2 = currentDiff;</span>
+      }
+
+    }
+
+    // Calculate RT value for input intensity based on linear regression
+    double slope, intercept, rt1, rt2;
+<span class="nc bnc" id="L515" title="All 2 branches missed.">    if (y1 &gt; 0) {</span>
+<span class="nc" id="L516">      slope = (y2 - y1) / (x2 - x1);</span>
+<span class="nc" id="L517">      intercept = y1 - (slope * x1);</span>
+<span class="nc" id="L518">      rt1 = (intensity - intercept) / slope;</span>
+<span class="nc bnc" id="L519" title="All 2 branches missed.">    } else if (x2 &gt; 0) { // Straight drop of peak to 0 intensity</span>
+<span class="nc" id="L520">      rt1 = x2;</span>
+<span class="nc" id="L521">    } else {</span>
+<span class="nc" id="L522">      rt1 = rtValues[0];</span>
+    }
+<span class="nc bnc" id="L524" title="All 2 branches missed.">    if (y4 &gt; 0) {</span>
+<span class="nc" id="L525">      slope = (y4 - y3) / (x4 - x3);</span>
+<span class="nc" id="L526">      intercept = y3 - (slope * x3);</span>
+<span class="nc" id="L527">      rt2 = (intensity - intercept) / slope;</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">    } else if (x3 &gt; 0) { // Straight drop of peak to 0 intensity</span>
+<span class="nc" id="L529">      rt2 = x3;</span>
+<span class="nc" id="L530">    } else {</span>
+<span class="nc" id="L531">      rt2 = rtValues[size - 1];</span>
+    }
+
+<span class="nc" id="L534">    return new double[] {rt1, rt2};</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

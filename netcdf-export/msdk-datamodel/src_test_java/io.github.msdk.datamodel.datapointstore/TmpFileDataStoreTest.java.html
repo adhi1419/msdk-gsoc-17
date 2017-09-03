@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TmpFileDataStoreTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.datapointstore</a> &gt; <span class="el_source">TmpFileDataStoreTest.java</span></div><h1>TmpFileDataStoreTest.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.datapointstore;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import io.github.msdk.datamodel.datastore.DataPointStore;
+import io.github.msdk.datamodel.datastore.DataPointStoreFactory;
+
+/**
+ * Tests for TmpFileDataPointStore
+ */
+<span class="nc" id="L25">public class TmpFileDataStoreTest {</span>
+
+  @SuppressWarnings({&quot;unused&quot;})
+  @Test
+  public void testStoreReadDataPoints() {
+
+<span class="nc" id="L31">    DataPointStore store = DataPointStoreFactory.getTmpFileDataStore();</span>
+
+<span class="nc" id="L33">    final int numOfGeneratedLists = 3; // TODO</span>
+<span class="nc" id="L34">    final Object storageIds[] = new Object[numOfGeneratedLists];</span>
+
+<span class="nc" id="L36">    int count = 1000;</span>
+<span class="nc" id="L37">    final double mzValues[] = new double[count];</span>
+<span class="nc" id="L38">    final float intensityValues[] = new float[count];</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">    for (int i = 0; i &lt; count; i++) {</span>
+<span class="nc" id="L40">      mzValues[i] = (double) count / (double) (count - i);</span>
+<span class="nc" id="L41">      intensityValues[i] = (float) mzValues[i] * 2;</span>
+    }
+
+<span class="nc" id="L44">    Object storageId = store.storeData(mzValues, count);</span>
+<span class="nc" id="L45">    Object storageId2 = store.storeData(intensityValues, count);</span>
+<span class="nc" id="L46">    Object storageId3 = store.storeData(intensityValues, count);</span>
+<span class="nc" id="L47">    Object storageId4 = store.storeData(mzValues, count);</span>
+
+<span class="nc" id="L49">    double readMzValues[] = new double[count * 2];</span>
+<span class="nc" id="L50">    float readIntensityValues[] = new float[count * 2];</span>
+
+    // Retrieve
+<span class="nc" id="L53">    store.loadData(storageId3, readIntensityValues);</span>
+<span class="nc" id="L54">    store.loadData(storageId, readMzValues);</span>
+
+<span class="nc bnc" id="L56" title="All 2 branches missed.">    for (int i = 0; i &lt; count; i++) {</span>
+<span class="nc" id="L57">      Assert.assertEquals(mzValues[i], readMzValues[i], 0.000001);</span>
+<span class="nc" id="L58">      Assert.assertEquals(intensityValues[i], readIntensityValues[i], 0.00001f);</span>
+    }
+
+<span class="nc" id="L61">  }</span>
+
+  @SuppressWarnings(&quot;unused&quot;)
+  @Test(expected = IllegalArgumentException.class)
+  public void testRemoveDataPoints() {
+
+<span class="nc" id="L67">    DataPointStore store = DataPointStoreFactory.getTmpFileDataStore();</span>
+
+<span class="nc" id="L69">    int count = 1000;</span>
+<span class="nc" id="L70">    final double mzValues[] = new double[count];</span>
+<span class="nc" id="L71">    final float intensityValues[] = new float[count];</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">    for (int i = 0; i &lt; count; i++) {</span>
+<span class="nc" id="L73">      mzValues[i] = (double) count / (double) (count - i);</span>
+<span class="nc" id="L74">      intensityValues[i] = (float) mzValues[i] * 2;</span>
+    }
+
+<span class="nc" id="L77">    Object storageId = store.storeData(mzValues, count);</span>
+<span class="nc" id="L78">    Object storageId2 = store.storeData(intensityValues, count);</span>
+
+<span class="nc" id="L80">    store.removeData(storageId);</span>
+
+<span class="nc" id="L82">    store.loadData(storageId, mzValues);</span>
+
+<span class="nc" id="L84">  }</span>
+
+  @SuppressWarnings(&quot;unused&quot;)
+  @Test(expected = IllegalStateException.class)
+  public void testDispose() {
+
+<span class="nc" id="L90">    DataPointStore store = DataPointStoreFactory.getTmpFileDataStore();</span>
+
+<span class="nc" id="L92">    int count = 1000;</span>
+<span class="nc" id="L93">    final double mzValues[] = new double[count];</span>
+<span class="nc" id="L94">    final float intensityValues[] = new float[count];</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">    for (int i = 0; i &lt; count; i++) {</span>
+<span class="nc" id="L96">      mzValues[i] = (double) count / (double) (count - i);</span>
+<span class="nc" id="L97">      intensityValues[i] = (float) mzValues[i] * 2;</span>
+    }
+
+<span class="nc" id="L100">    Object storageId = store.storeData(mzValues, count);</span>
+<span class="nc" id="L101">    Object storageId2 = store.storeData(intensityValues, count);</span>
+
+<span class="nc" id="L103">    store.dispose();</span>
+
+<span class="nc" id="L105">    store.loadData(storageId, mzValues);</span>
+
+<span class="nc" id="L107">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</div></body></html>

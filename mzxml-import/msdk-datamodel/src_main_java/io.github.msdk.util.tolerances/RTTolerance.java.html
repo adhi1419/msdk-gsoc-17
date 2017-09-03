@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>RTTolerance.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.util.tolerances</a> &gt; <span class="el_source">RTTolerance.java</span></div><h1>RTTolerance.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.util.tolerances;
+
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.Immutable;
+
+import com.google.common.collect.Range;
+
+/**
+ * This class represents rt tolerance. Tolerance is set using either a absolute (sec) or relative
+ * (%) value.
+ */
+@Immutable
+public class RTTolerance {
+
+  // Tolerance can be either absolute (sec) or relative (%).
+  private final @Nonnull Float rtTolerance;
+  private final boolean isAbsolute;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for RTTolerance.
+   * &lt;/p&gt;
+   *
+   * @param rtTolerance a {@link java.lang.Float} object.
+   * @param isAbsolute a {@link java.lang.Boolean} object.
+   */
+<span class="nc" id="L40">  public RTTolerance(final float rtTolerance, final boolean isAbsolute) {</span>
+<span class="nc" id="L41">    this.rtTolerance = rtTolerance;</span>
+<span class="nc" id="L42">    this.isAbsolute = isAbsolute;</span>
+<span class="nc" id="L43">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * isAbsolute.
+   * &lt;/p&gt;
+   *
+   * @return a boolean.
+   */
+  public boolean isAbsolute() {
+<span class="nc" id="L53">    return isAbsolute;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * getTolerance.
+   * &lt;/p&gt;
+   *
+   * @return a float.
+   */
+  public float getTolerance() {
+<span class="nc" id="L64">    return rtTolerance;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * getToleranceRange.
+   * &lt;/p&gt;
+   *
+   * @param rtValue a float.
+   * @return a {@link com.google.common.collect.Range} object.
+   */
+  public Range&lt;Float&gt; getToleranceRange(final float rtValue) {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">    final float absoluteTolerance = isAbsolute ? rtTolerance : rtValue * rtTolerance;</span>
+<span class="nc" id="L77">    return Range.closed(rtValue - absoluteTolerance, rtValue + absoluteTolerance);</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * checkWithinTolerance.
+   * &lt;/p&gt;
+   *
+   * @param rt1 a float.
+   * @param rt2 a float.
+   * @return a boolean.
+   */
+  public boolean checkWithinTolerance(final float rt1, final float rt2) {
+<span class="nc" id="L90">    return getToleranceRange(rt1).contains(rt2);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    return isAbsolute ? rtTolerance + &quot; sec&quot; : 100.0 * rtTolerance + &quot; %&quot;;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

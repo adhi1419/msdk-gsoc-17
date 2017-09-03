@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLMsScan.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-spectra-spectrumtypedetection</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.spectra.spectrumtypedetection</a> &gt; <span class="el_source">MzMLMsScan.java</span></div><h1>MzMLMsScan.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.spectra.spectrumtypedetection;
+
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.collect.Range;
+
+import io.github.msdk.MSDKRuntimeException;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScanType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.util.tolerances.MzTolerance;
+import uk.ac.ebi.jmzml.model.mzml.Spectrum;
+import uk.ac.ebi.jmzml.xml.io.MzMLUnmarshaller;
+import uk.ac.ebi.jmzml.xml.io.MzMLUnmarshallerException;
+
+class MzMLMsScan extends AbstractReadOnlyMsScan {
+
+  private final @Nonnull MzMLRawDataFile dataFile;
+  private final @Nonnull String spectrumId;
+
+  MzMLMsScan(@Nonnull MzMLRawDataFile dataFile, @Nonnull String spectrumId,
+      @Nonnull MsSpectrumType spectrumType, @Nonnull String msFunction,
+      @Nullable Float rt, @Nonnull MsScanType scanType,
+      @Nullable Range&lt;Double&gt; mzRange, @Nullable Range&lt;Double&gt; scanningRange,
+      @Nonnull Integer scanNumber, @Nullable String scanDefinition, @Nonnull Float tic,
+      @Nonnull PolarityType polarity, @Nullable ActivationInfo sourceFragmentation,
+      @Nonnull List&lt;IsolationInfo&gt; isolations, @Nonnull Integer numOfDataPoints) {
+
+<span class="nc" id="L47">    super(dataFile, spectrumType, msFunction, rt, scanType, mzRange, scanningRange,</span>
+<span class="nc" id="L48">        scanNumber, scanDefinition, tic, polarity, sourceFragmentation, isolations,</span>
+<span class="nc" id="L49">        numOfDataPoints);</span>
+
+<span class="nc" id="L51">    this.dataFile = dataFile;</span>
+<span class="nc" id="L52">    this.spectrumId = spectrumId;</span>
+<span class="nc" id="L53">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public double[] getMzValues(double array[]) {
+    try {
+<span class="nc" id="L60">      MzMLUnmarshaller parser = dataFile.getParser();</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">      if (parser == null) {</span>
+<span class="nc" id="L62">        throw new MSDKRuntimeException(&quot;The raw data file object has been disposed&quot;);</span>
+      }
+<span class="nc" id="L64">      Spectrum jmzSpectrum = parser.getSpectrumById(spectrumId);</span>
+<span class="nc" id="L65">      return MzMLConverter.extractMzValues(jmzSpectrum, null);</span>
+<span class="nc" id="L66">    } catch (MzMLUnmarshallerException e) {</span>
+<span class="nc" id="L67">      throw (new MSDKRuntimeException(e));</span>
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public float[] getIntensityValues(float array[]) {
+    try {
+<span class="nc" id="L76">      MzMLUnmarshaller parser = dataFile.getParser();</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">      if (parser == null) {</span>
+<span class="nc" id="L78">        throw new MSDKRuntimeException(&quot;The raw data file object has been disposed&quot;);</span>
+      }
+<span class="nc" id="L80">      Spectrum jmzSpectrum = parser.getSpectrumById(spectrumId);</span>
+<span class="nc" id="L81">      return MzMLConverter.extractIntensityValues(jmzSpectrum, null);</span>
+<span class="nc" id="L82">    } catch (MzMLUnmarshallerException e) {</span>
+<span class="nc" id="L83">      throw (new MSDKRuntimeException(e));</span>
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public MzTolerance getMzTolerance() {
+<span class="nc" id="L90">    return null;</span>
+  }
+
+  @Override
+  public Integer getMsLevel() {
+<span class="nc" id="L95">    return 1;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

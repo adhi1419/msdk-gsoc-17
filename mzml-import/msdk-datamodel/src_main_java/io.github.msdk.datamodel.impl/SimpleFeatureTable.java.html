@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleFeatureTable.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.impl</a> &gt; <span class="el_source">SimpleFeatureTable.java</span></div><h1>SimpleFeatureTable.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+
+import io.github.msdk.datamodel.featuretables.FeatureTable;
+import io.github.msdk.datamodel.featuretables.FeatureTableRow;
+import io.github.msdk.datamodel.featuretables.Sample;
+
+/**
+ * Implementation of the FeatureTable interface.
+ */
+<span class="nc" id="L31">public class SimpleFeatureTable implements FeatureTable {</span>
+
+<span class="nc" id="L33">  private final @Nonnull ArrayList&lt;FeatureTableRow&gt; featureTableRows = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L34">  private final @Nonnull ArrayList&lt;Sample&gt; featureTableSamples = new ArrayList&lt;&gt;();</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public @Nonnull List&lt;FeatureTableRow&gt; getRows() {
+<span class="nc" id="L39">    return ImmutableList.copyOf(featureTableRows);</span>
+  }
+
+  /**
+   * &lt;p&gt;addRow.&lt;/p&gt;
+   *
+   * @param row a {@link io.github.msdk.datamodel.featuretables.FeatureTableRow} object.
+   */
+  public void addRow(@Nonnull FeatureTableRow row) {
+<span class="nc" id="L48">    Preconditions.checkNotNull(row);</span>
+<span class="nc" id="L49">    synchronized (featureTableRows) {</span>
+<span class="nc" id="L50">      featureTableRows.add(row);</span>
+    }
+<span class="nc" id="L52">  }</span>
+
+  /**
+   * &lt;p&gt;removeRow.&lt;/p&gt;
+   *
+   * @param row a {@link io.github.msdk.datamodel.featuretables.FeatureTableRow} object.
+   */
+  public void removeRow(@Nonnull FeatureTableRow row) {
+<span class="nc" id="L60">    Preconditions.checkNotNull(row);</span>
+<span class="nc" id="L61">    synchronized (featureTableRows) {</span>
+<span class="nc" id="L62">      featureTableRows.remove(row);</span>
+    }
+<span class="nc" id="L64">  }</span>
+
+
+  /** {@inheritDoc} */
+  @Override
+  public @Nonnull List&lt;Sample&gt; getSamples() {
+<span class="nc" id="L70">    return ImmutableList.copyOf(featureTableSamples);</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param samples a {@link java.util.List} object.
+   */
+  public @Nonnull void setSamples(List&lt;Sample&gt; samples) {
+<span class="nc" id="L79">    this.featureTableSamples.clear();</span>
+<span class="nc" id="L80">    this.featureTableSamples.addAll(samples);</span>
+<span class="nc" id="L81">  }</span>
+
+
+  /** {@inheritDoc} */
+  @Override
+  public void dispose() {
+    // Do nothing
+<span class="nc" id="L88">  }</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>

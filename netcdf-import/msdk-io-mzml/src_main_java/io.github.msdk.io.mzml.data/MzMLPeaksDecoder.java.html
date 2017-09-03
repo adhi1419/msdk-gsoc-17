@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLPeaksDecoder.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLPeaksDecoder.java</span></div><h1>MzMLPeaksDecoder.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
+import java.util.zip.DataFormatException;
+import java.util.zip.InflaterInputStream;
+
+import org.apache.commons.io.IOUtils;
+
+import com.google.common.io.LittleEndianDataInputStream;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.io.mzml.util.ByteBufferInputStream;
+import io.github.msdk.io.mzml.util.MSNumpress;
+
+/**
+ * &lt;p&gt;
+ * MzMLIntensityPeaksDecoder class.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L36">public class MzMLPeaksDecoder {</span>
+
+  /**
+   * Converts a base64 encoded mz or intensity string used in mzML files to an array of floats. If
+   * the original precision was 64 bit, you still get floats as output.
+   *
+   * @param binaryDataInfo meta-info about the compressed data
+   * @throws java.util.zip.DataFormatException if any.
+   * @throws java.io.IOException if any.
+   * @return a float array containing the decoded values
+   * @throws io.github.msdk.MSDKException if any.
+   * @param inputStream a {@link java.io.InputStream} object.
+   * @param data an array of float.
+   */
+  public static float[] decodeToFloat(InputStream inputStream, MzMLBinaryDataInfo binaryDataInfo,
+      float[] data) throws DataFormatException, IOException, MSDKException {
+
+<span class="nc" id="L53">    int lengthIn = binaryDataInfo.getEncodedLength();</span>
+<span class="nc" id="L54">    int numPoints = binaryDataInfo.getArrayLength();</span>
+<span class="nc" id="L55">    InputStream is = null;</span>
+
+<span class="nc bnc" id="L57" title="All 2 branches missed.">    if (inputStream instanceof ByteBufferInputStream) {</span>
+<span class="nc" id="L58">      ByteBufferInputStream mappedByteBufferInputStream = (ByteBufferInputStream) inputStream;</span>
+<span class="nc" id="L59">      mappedByteBufferInputStream.constrain(binaryDataInfo.getPosition(), lengthIn);</span>
+<span class="nc" id="L60">      is = Base64.getDecoder().wrap(mappedByteBufferInputStream);</span>
+<span class="nc" id="L61">    } else {</span>
+<span class="nc" id="L62">      is = Base64.getDecoder().wrap(inputStream);</span>
+    }
+
+    // for some reason there sometimes might be zero length &lt;peaks&gt; tags
+    // (ms2 usually)
+    // in this case we just return an empty result
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    if (lengthIn == 0) {</span>
+<span class="nc" id="L69">      return new float[0];</span>
+    }
+
+<span class="nc" id="L72">    InflaterInputStream iis = null;</span>
+<span class="nc" id="L73">    LittleEndianDataInputStream dis = null;</span>
+<span class="nc" id="L74">    byte[] bytes = null;</span>
+
+<span class="nc bnc" id="L76" title="All 4 branches missed.">    if (data == null || data.length &lt; numPoints)</span>
+<span class="nc" id="L77">      data = new float[numPoints];</span>
+
+    // first check for zlib compression, inflation must be done before
+    // NumPress
+<span class="nc bnc" id="L81" title="All 2 branches missed.">    if (binaryDataInfo.getCompressionType() != null) {</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">      switch (binaryDataInfo.getCompressionType()) {</span>
+        case ZLIB:
+        case NUMPRESS_LINPRED_ZLIB:
+        case NUMPRESS_POSINT_ZLIB:
+        case NUMPRESS_SHLOGF_ZLIB:
+<span class="nc" id="L87">          iis = new InflaterInputStream(is);</span>
+<span class="nc" id="L88">          dis = new LittleEndianDataInputStream(iis);</span>
+<span class="nc" id="L89">          break;</span>
+        default:
+<span class="nc" id="L91">          dis = new LittleEndianDataInputStream(is);</span>
+<span class="nc" id="L92">          break;</span>
+      }
+
+      // Now we can check for NumPress
+      int numDecodedDoubles;
+<span class="nc bnc" id="L97" title="All 4 branches missed.">      switch (binaryDataInfo.getCompressionType()) {</span>
+        case NUMPRESS_LINPRED:
+        case NUMPRESS_LINPRED_ZLIB:
+<span class="nc" id="L100">          bytes = IOUtils.toByteArray(dis);</span>
+<span class="nc" id="L101">          numDecodedDoubles = MSNumpress.decodeLinear(bytes, bytes.length, data);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">          if (numDecodedDoubles &lt; 0) {</span>
+<span class="nc" id="L103">            throw new MSDKException(&quot;MSNumpress linear decoder failed&quot;);</span>
+          }
+<span class="nc" id="L105">          return data;</span>
+        case NUMPRESS_POSINT:
+        case NUMPRESS_POSINT_ZLIB:
+<span class="nc" id="L108">          bytes = IOUtils.toByteArray(dis);</span>
+<span class="nc" id="L109">          numDecodedDoubles = MSNumpress.decodePic(bytes, bytes.length, data);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">          if (numDecodedDoubles &lt; 0) {</span>
+<span class="nc" id="L111">            throw new MSDKException(&quot;MSNumpress positive integer decoder failed&quot;);</span>
+          }
+<span class="nc" id="L113">          return data;</span>
+        case NUMPRESS_SHLOGF:
+        case NUMPRESS_SHLOGF_ZLIB:
+<span class="nc" id="L116">          bytes = IOUtils.toByteArray(dis);</span>
+<span class="nc" id="L117">          numDecodedDoubles = MSNumpress.decodeSlof(bytes, bytes.length, data);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">          if (numDecodedDoubles &lt; 0) {</span>
+<span class="nc" id="L119">            throw new MSDKException(&quot;MSNumpress short logged float decoder failed&quot;);</span>
+          }
+<span class="nc" id="L121">          return data;</span>
+        default:
+          break;
+      }
+<span class="nc" id="L125">    } else {</span>
+<span class="nc" id="L126">      dis = new LittleEndianDataInputStream(is);</span>
+    }
+
+    Integer precision;
+<span class="nc bnc" id="L130" title="All 3 branches missed.">    switch (binaryDataInfo.getBitLength()) {</span>
+      case THIRTY_TWO_BIT_FLOAT:
+      case THIRTY_TWO_BIT_INTEGER:
+<span class="nc" id="L133">        precision = 32;</span>
+<span class="nc" id="L134">        break;</span>
+      case SIXTY_FOUR_BIT_FLOAT:
+      case SIXTY_FOUR_BIT_INTEGER:
+<span class="nc" id="L137">        precision = 64;</span>
+<span class="nc" id="L138">        break;</span>
+      default:
+<span class="nc" id="L140">        dis.close();</span>
+<span class="nc" id="L141">        throw new IllegalArgumentException(</span>
+<span class="nc" id="L142">            &quot;Precision MUST be specified and be either 32-bit or 64-bit, &quot;</span>
+                + &quot;if MS-NUMPRESS compression was not used&quot;);
+    }
+
+    try {
+<span class="nc bnc" id="L147" title="All 3 branches missed.">      switch (precision) {</span>
+        case (32): {
+          
+<span class="nc bnc" id="L150" title="All 2 branches missed.">          for (int i = 0; i &lt; numPoints; i++) {</span>
+<span class="nc" id="L151">            data[i] = dis.readFloat();</span>
+          }
+<span class="nc" id="L153">          break;</span>
+        }
+        case (64): {
+
+<span class="nc bnc" id="L157" title="All 2 branches missed.">          for (int i = 0; i &lt; numPoints; i++) {</span>
+<span class="nc" id="L158">            data[i] = (float) dis.readDouble();</span>
+          }
+<span class="nc" id="L160">          break;</span>
+        }
+        default: {
+<span class="nc" id="L163">          dis.close();</span>
+<span class="nc" id="L164">          throw new IllegalArgumentException(</span>
+<span class="nc" id="L165">              &quot;Precision can only be 32/64 bits, other values are not valid.&quot;);</span>
+        }
+      }
+<span class="nc" id="L168">    } catch (EOFException eof) {</span>
+      // If the stream reaches EOF unexpectedly, it is probably because the particular
+      // scan/chromatogram didn't pass the Predicate
+<span class="nc" id="L171">      throw new MSDKException(</span>
+<span class="nc" id="L172">          &quot;Couldn't obtain values. Please make sure the scan/chromatogram passes the Predicate.&quot;);</span>
+<span class="nc" id="L173">    } finally {</span>
+<span class="nc" id="L174">      dis.close();</span>
+<span class="nc" id="L175">    }</span>
+
+<span class="nc" id="L177">    return data;</span>
+  }
+
+  /**
+   * Converts a base64 encoded mz or intensity string used in mzML files to an array of doubles. If
+   * the original precision was 32 bit, you still get doubles as output.
+   *
+   * @param binaryDataInfo meta-info about encoded data
+   * @throws java.util.zip.DataFormatException if any.
+   * @throws java.io.IOException if any.
+   * @return a double array containing the decoded values
+   * @throws io.github.msdk.MSDKException if any.
+   * @param inputStream a {@link java.io.InputStream} object.
+   * @param data an array of double.
+   */
+  public static double[] decodeToDouble(InputStream inputStream, MzMLBinaryDataInfo binaryDataInfo,
+      double[] data) throws DataFormatException, IOException, MSDKException {
+
+<span class="nc" id="L195">    int lengthIn = binaryDataInfo.getEncodedLength();</span>
+<span class="nc" id="L196">    int numPoints = binaryDataInfo.getArrayLength();</span>
+
+<span class="nc" id="L198">    InputStream is = null;</span>
+
+<span class="nc bnc" id="L200" title="All 2 branches missed.">    if (inputStream instanceof ByteBufferInputStream) {</span>
+<span class="nc" id="L201">      ByteBufferInputStream mappedByteBufferInputStream = (ByteBufferInputStream) inputStream;</span>
+<span class="nc" id="L202">      mappedByteBufferInputStream.constrain(binaryDataInfo.getPosition(), lengthIn);</span>
+<span class="nc" id="L203">      is = Base64.getDecoder().wrap(mappedByteBufferInputStream);</span>
+<span class="nc" id="L204">    } else {</span>
+<span class="nc" id="L205">      is = Base64.getDecoder().wrap(inputStream);</span>
+    }
+
+    // for some reason there sometimes might be zero length &lt;peaks&gt; tags
+    // (ms2 usually)
+    // in this case we just return an empty result
+<span class="nc bnc" id="L211" title="All 2 branches missed.">    if (lengthIn == 0) {</span>
+<span class="nc" id="L212">      return new double[0];</span>
+    }
+
+<span class="nc" id="L215">    InflaterInputStream iis = null;</span>
+<span class="nc" id="L216">    LittleEndianDataInputStream dis = null;</span>
+<span class="nc" id="L217">    byte[] bytes = null;</span>
+
+<span class="nc bnc" id="L219" title="All 4 branches missed.">    if (data == null || data.length &lt; numPoints)</span>
+<span class="nc" id="L220">      data = new double[numPoints];</span>
+
+    // first check for zlib compression, inflation must be done before
+    // NumPress
+<span class="nc bnc" id="L224" title="All 2 branches missed.">    if (binaryDataInfo.getCompressionType() != null) {</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">      switch (binaryDataInfo.getCompressionType()) {</span>
+        case ZLIB:
+        case NUMPRESS_LINPRED_ZLIB:
+        case NUMPRESS_POSINT_ZLIB:
+        case NUMPRESS_SHLOGF_ZLIB:
+<span class="nc" id="L230">          iis = new InflaterInputStream(is);</span>
+<span class="nc" id="L231">          dis = new LittleEndianDataInputStream(iis);</span>
+<span class="nc" id="L232">          break;</span>
+
+        default:
+<span class="nc" id="L235">          dis = new LittleEndianDataInputStream(is);</span>
+<span class="nc" id="L236">          break;</span>
+      }
+
+      // Now we can check for NumPress
+      int numDecodedDoubles;
+<span class="nc bnc" id="L241" title="All 4 branches missed.">      switch (binaryDataInfo.getCompressionType()) {</span>
+        case NUMPRESS_LINPRED:
+        case NUMPRESS_LINPRED_ZLIB:
+<span class="nc" id="L244">          bytes = IOUtils.toByteArray(dis);</span>
+<span class="nc" id="L245">          numDecodedDoubles = MSNumpress.decodeLinear(bytes, bytes.length, data);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">          if (numDecodedDoubles &lt; 0) {</span>
+<span class="nc" id="L247">            throw new MSDKException(&quot;MSNumpress linear decoder failed&quot;);</span>
+          }
+<span class="nc" id="L249">          return data;</span>
+        case NUMPRESS_POSINT:
+        case NUMPRESS_POSINT_ZLIB:
+<span class="nc" id="L252">          bytes = IOUtils.toByteArray(dis);</span>
+<span class="nc" id="L253">          numDecodedDoubles = MSNumpress.decodePic(bytes, bytes.length, data);</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">          if (numDecodedDoubles &lt; 0) {</span>
+<span class="nc" id="L255">            throw new MSDKException(&quot;MSNumpress positive integer decoder failed&quot;);</span>
+          }
+<span class="nc" id="L257">          return data;</span>
+        case NUMPRESS_SHLOGF:
+        case NUMPRESS_SHLOGF_ZLIB:
+<span class="nc" id="L260">          bytes = IOUtils.toByteArray(dis);</span>
+<span class="nc" id="L261">          numDecodedDoubles = MSNumpress.decodeSlof(bytes, bytes.length, data);</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">          if (numDecodedDoubles &lt; 0) {</span>
+<span class="nc" id="L263">            throw new MSDKException(&quot;MSNumpress short logged float decoder failed&quot;);</span>
+          }
+<span class="nc" id="L265">          return data;</span>
+        default:
+          break;
+      }
+<span class="nc" id="L269">    } else {</span>
+<span class="nc" id="L270">      dis = new LittleEndianDataInputStream(is);</span>
+    }
+
+    Integer precision;
+<span class="nc bnc" id="L274" title="All 3 branches missed.">    switch (binaryDataInfo.getBitLength()) {</span>
+      case THIRTY_TWO_BIT_FLOAT:
+      case THIRTY_TWO_BIT_INTEGER:
+<span class="nc" id="L277">        precision = 32;</span>
+<span class="nc" id="L278">        break;</span>
+      case SIXTY_FOUR_BIT_FLOAT:
+      case SIXTY_FOUR_BIT_INTEGER:
+<span class="nc" id="L281">        precision = 64;</span>
+<span class="nc" id="L282">        break;</span>
+      default:
+<span class="nc" id="L284">        dis.close();</span>
+<span class="nc" id="L285">        throw new IllegalArgumentException(</span>
+<span class="nc" id="L286">            &quot;Precision MUST be specified and be either 32-bit or 64-bit, &quot;</span>
+                + &quot;if MS-NUMPRESS compression was not used&quot;);
+    }
+
+    try {
+<span class="nc bnc" id="L291" title="All 3 branches missed.">      switch (precision) {</span>
+        case (32): {
+          int asInt;
+
+<span class="nc bnc" id="L295" title="All 2 branches missed.">          for (int i = 0; i &lt; numPoints; i++) {</span>
+<span class="nc" id="L296">            asInt = dis.readInt();</span>
+<span class="nc" id="L297">            data[i] = Float.intBitsToFloat(asInt);</span>
+          }
+<span class="nc" id="L299">          break;</span>
+        }
+        case (64): {
+          long asLong;
+
+<span class="nc bnc" id="L304" title="All 2 branches missed.">          for (int i = 0; i &lt; numPoints; i++) {</span>
+<span class="nc" id="L305">            asLong = dis.readLong();</span>
+<span class="nc" id="L306">            data[i] = Double.longBitsToDouble(asLong);</span>
+          }
+          break;
+        }
+      }
+<span class="nc" id="L311">    } catch (EOFException eof) {</span>
+      // If the stream reaches EOF unexpectedly, it is probably because the particular
+      // scan/chromatogram didn't pass the Predicate
+<span class="nc" id="L314">      throw new MSDKException(</span>
+<span class="nc" id="L315">          &quot;Couldn't obtain values. Please make sure the scan/chromatogram passes the Predicate.&quot;);</span>
+<span class="nc" id="L316">    } finally {</span>
+<span class="nc" id="L317">      dis.close();</span>
+<span class="nc" id="L318">    }</span>
+<span class="nc" id="L319">    return data;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

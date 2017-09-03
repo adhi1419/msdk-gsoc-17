@@ -29,7 +29,7 @@ a {
   -moz-transition: all 0.2s;
   transition: all 0.2s; }
   a:focus, a:hover {
-    color: #0085A1; }
+    color: #0085A1; },
 
 a img:focus, a img:hover {
   cursor: zoom-in; }

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLCV.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-spectra-spectrumtypedetection</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.spectra.spectrumtypedetection</a> &gt; <span class="el_source">MzMLCV.java</span></div><h1>MzMLCV.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.spectra.spectrumtypedetection;
+
+import uk.ac.ebi.jmzml.model.mzml.CVParam;
+
+/**
+ * Controlled vocabulary (CV) values for mzML files.
+ * 
+ * @see &lt;a href=
+ *      &quot;http://psidev.cvs.sourceforge.net/viewvc/psidev/psi/psi-ms/mzML/controlledVocabulary/psi-ms.obo&quot;&gt;
+ *      Official CV specification&lt;/a&gt;
+ * 
+ */
+<span class="nc" id="L26">class MzMLCV {</span>
+
+  // Scan start time
+  static final String cvScanStartTime = &quot;MS:1000016&quot;;
+
+  // MS level
+  static final String cvMSLevel = &quot;MS:1000511&quot;;
+  static final String cvMS1Spectrum = &quot;MS:1000579&quot;;
+
+  // m/z and charge state
+  static final String cvMz = &quot;MS:1000040&quot;;
+  static final String cvChargeState = &quot;MS:1000041&quot;;
+
+  // Minutes unit. MS:1000038 is used in mzML 1.0, while UO:000003 is used in
+  // mzML 1.1.0
+  static final String cvUnitsMin1 = &quot;MS:1000038&quot;;
+  static final String cvUnitsMin2 = &quot;UO:0000031&quot;;
+  static final String cvUnitsSec = &quot;UO:0000010&quot;;
+
+  // Scan filter string
+  static final String cvScanFilterString = &quot;MS:1000512&quot;;
+
+  // Precursor m/z.
+  static final String cvPrecursorMz = &quot;MS:1000744&quot;;
+
+  // Polarity
+  static final String cvPolarityPositive = &quot;MS:1000130&quot;;
+  static final String cvPolarityNegative = &quot;MS:1000129&quot;;
+<span class="nc" id="L54">  static final CVParam polarityPositiveCvParam = new CVParam();</span>
+<span class="nc" id="L55">  static final CVParam polarityNegativeCvParam = new CVParam();</span>
+
+  // Centroid vs profile
+  static final String cvCentroidSpectrum = &quot;MS:1000127&quot;;
+  static final String cvProfileSpectrum = &quot;MS:1000128&quot;;
+<span class="nc" id="L60">  static final CVParam centroidCvParam = new CVParam();</span>
+<span class="nc" id="L61">  static final CVParam profileCvParam = new CVParam();</span>
+
+  // Fill in the CVParam details
+  static {
+<span class="nc" id="L65">    polarityPositiveCvParam.setAccession(cvPolarityPositive);</span>
+<span class="nc" id="L66">    polarityPositiveCvParam.setName(&quot;positive scan&quot;);</span>
+<span class="nc" id="L67">    polarityNegativeCvParam.setAccession(cvPolarityNegative);</span>
+<span class="nc" id="L68">    polarityNegativeCvParam.setName(&quot;negative scan&quot;);</span>
+<span class="nc" id="L69">    centroidCvParam.setAccession(cvCentroidSpectrum);</span>
+<span class="nc" id="L70">    centroidCvParam.setName(&quot;centroid mass spectrum&quot;);</span>
+<span class="nc" id="L71">    profileCvParam.setAccession(cvProfileSpectrum);</span>
+<span class="nc" id="L72">    profileCvParam.setName(&quot;profile spectrum&quot;);</span>
+  }
+
+  // Chromatograms
+  static final String cvChromatogramTIC = &quot;MS:1000235&quot;;
+  static final String cvChromatogramMRM_SRM = &quot;MS:1001473&quot;;
+  static final String cvChromatogramSIC = &quot;MS:1000627&quot;;
+  static final String cvChromatogramBPC = &quot;MS:1000628&quot;;
+
+  // Activation
+  static final String cvActivationEnergy = &quot;MS:1000045&quot;;
+  static final String cvActivationCID = &quot;MS:1000133&quot;;
+
+  // Isolation
+  static final String cvIsolationWindowTarget = &quot;MS:1000827&quot;;
+  static final String cvIsolationWindowLowerOffset = &quot;MS:1000828&quot;;
+  static final String cvIsolationWindowUpperOffset = &quot;MS:1000829&quot;;
+
+  // Data arrays
+  static final String cvMzArray = &quot;MS:1000514&quot;;
+  static final String cvIntensityArray = &quot;MS:1000515&quot;;
+
+  // UV spectrum, actually &quot;electromagnetic radiation spectrum&quot;
+<span class="nc" id="L95">  static final String cvUVSpectrum = &quot;MS:1000804&quot;;</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleIonAnnotation.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.impl</a> &gt; <span class="el_source">SimpleIonAnnotation.java</span></div><h1>SimpleIonAnnotation.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.impl;
+
+import java.net.URL;
+
+import javax.annotation.Nullable;
+
+import org.openscience.cdk.interfaces.IAtomContainer;
+import org.openscience.cdk.interfaces.IMolecularFormula;
+
+import io.github.msdk.datamodel.ionannotations.IonAnnotation;
+import io.github.msdk.datamodel.ionannotations.IonType;
+
+/**
+ * Simple IonAnnotation implementation;
+ */
+<span class="nc" id="L29">public class SimpleIonAnnotation implements IonAnnotation {</span>
+
+  private @Nullable IAtomContainer chemicalStructure;
+  private @Nullable IMolecularFormula formula;
+  private @Nullable IonType ionType;
+  private @Nullable Double expectedMz;
+  private @Nullable String description;
+  private @Nullable String identificationMethod;
+  private @Nullable String annotationId;
+  private @Nullable URL accessionURL;
+  private @Nullable Float expectedRT;
+  private @Nullable String inchiKey;
+  private @Nullable String database;
+  private @Nullable String spectraRef;
+  private @Nullable Integer reliability;
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public IAtomContainer getChemicalStructure() {
+<span class="nc" id="L49">    return chemicalStructure;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param chemicalStructure a {@link org.openscience.cdk.interfaces.IAtomContainer} object.
+   */
+  public void setChemicalStructure(@Nullable IAtomContainer chemicalStructure) {
+<span class="nc" id="L58">    this.chemicalStructure = chemicalStructure;</span>
+<span class="nc" id="L59">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public IMolecularFormula getFormula() {
+<span class="nc" id="L65">    return formula;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param formula a {@link org.openscience.cdk.interfaces.IMolecularFormula} object.
+   */
+  public void setFormula(@Nullable IMolecularFormula formula) {
+<span class="nc" id="L74">    this.formula = formula;</span>
+<span class="nc" id="L75">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public IonType getIonType() {
+<span class="nc" id="L81">    return ionType;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param ionType a {@link io.github.msdk.datamodel.ionannotations.IonType} object.
+   */
+  public void setIonType(@Nullable IonType ionType) {
+<span class="nc" id="L90">    this.ionType = ionType;</span>
+<span class="nc" id="L91">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public Double getExpectedMz() {
+<span class="nc" id="L97">    return expectedMz;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param expectedMz a {@link java.lang.Double} object.
+   */
+  public void setExpectedMz(@Nullable Double expectedMz) {
+<span class="nc" id="L106">    this.expectedMz = expectedMz;</span>
+<span class="nc" id="L107">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public String getDescription() {
+<span class="nc" id="L113">    return description;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param description a {@link java.lang.String} object.
+   */
+  public void setDescription(@Nullable String description) {
+<span class="nc" id="L122">    this.description = description;</span>
+<span class="nc" id="L123">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public String getIdentificationMethod() {
+<span class="nc" id="L129">    return identificationMethod;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param identificationMethod a {@link java.lang.String} object.
+   */
+  public void setIdentificationMethod(@Nullable String identificationMethod) {
+<span class="nc" id="L138">    this.identificationMethod = identificationMethod;</span>
+<span class="nc" id="L139">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public String getAnnotationId() {
+<span class="nc" id="L145">    return annotationId;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param annotationId a {@link java.lang.String} object.
+   */
+  public void setAnnotationId(@Nullable String annotationId) {
+<span class="nc" id="L154">    this.annotationId = annotationId;</span>
+<span class="nc" id="L155">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public URL getAccessionURL() {
+<span class="nc" id="L161">    return accessionURL;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param accessionURL a {@link java.net.URL} object.
+   */
+  public void setAccessionURL(@Nullable URL accessionURL) {
+<span class="nc" id="L170">    this.accessionURL = accessionURL;</span>
+<span class="nc" id="L171">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public Float getExpectedRetentionTime() {
+<span class="nc" id="L177">    return expectedRT;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param expectedRT a {@link java.lang.Float} object.
+   */
+  public void setExpectedRetentionTime(@Nullable Float expectedRT) {
+<span class="nc" id="L186">    this.expectedRT = expectedRT;</span>
+<span class="nc" id="L187">  }</span>
+
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public String getInchiKey() {
+<span class="nc" id="L194">    return inchiKey;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param inchiKey a {@link java.lang.String} object.
+   */
+  public void setInchiKey(@Nullable String inchiKey) {
+<span class="nc" id="L203">    this.inchiKey = inchiKey;</span>
+<span class="nc" id="L204">  }</span>
+
+
+
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public String getDatabase() {
+<span class="nc" id="L213">    return database;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param database a {@link java.lang.String} object.
+   */
+  public void setDatabase(@Nullable String database) {
+<span class="nc" id="L222">    this.database = database;</span>
+<span class="nc" id="L223">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public String getSpectraRef() {
+<span class="nc" id="L229">    return spectraRef;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param spectraRef a {@link java.lang.String} object.
+   */
+  public void setSpectraRef(@Nullable String spectraRef) {
+<span class="nc" id="L238">    this.spectraRef = spectraRef;</span>
+<span class="nc" id="L239">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public Integer getReliability() {
+<span class="nc" id="L245">    return reliability;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param reliability a {@link java.lang.Integer} object.
+   */
+  public void setReliability(@Nullable Integer reliability) {
+<span class="nc" id="L254">    this.reliability = reliability;</span>
+<span class="nc" id="L255">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+<span class="nc" id="L260">    return annotationId + &quot; @ &quot; + expectedMz;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>

@@ -1,0 +1,596 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLMsScan.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLMsScan.java</span></div><h1>MzMLMsScan.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Range;
+
+import io.github.msdk.MSDKRuntimeException;
+import io.github.msdk.datamodel.impl.SimpleIsolationInfo;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.MsScanType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.io.mzml.MzMLFileImportMethod;
+import io.github.msdk.spectra.spectrumtypedetection.SpectrumTypeDetectionAlgorithm;
+import io.github.msdk.util.MsSpectrumUtil;
+import io.github.msdk.util.tolerances.MzTolerance;
+
+/**
+ * &lt;p&gt;
+ * MzMLSpectrum class.
+ * &lt;/p&gt;
+ */
+public class MzMLMsScan implements MsScan {
+  private final @Nonnull MzMLRawDataFile dataFile;
+  private @Nonnull InputStream inputStream;
+  private final @Nonnull String id;
+  private final @Nonnull Integer scanNumber;
+  private final int numOfDataPoints;
+
+  private MzMLCVGroup cvParams;
+  private MzMLPrecursorList precursorList;
+  private MzMLProductList productList;
+  private MzMLScanList scanList;
+  private MzMLBinaryDataInfo mzBinaryDataInfo;
+  private MzMLBinaryDataInfo intensityBinaryDataInfo;
+  private MsSpectrumType spectrumType;
+  private Float tic;
+  private Float retentionTime;
+  private Range&lt;Double&gt; mzRange;
+  private Range&lt;Double&gt; mzScanWindowRange;
+  private double[] mzValues;
+  private float[] intensityValues;
+
+<span class="fc" id="L69">  private Logger logger = LoggerFactory.getLogger(MzMLFileImportMethod.class);</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for {@link io.github.msdk.io.mzml.data.MzMLMsScan MzMLMsScan}
+   * &lt;/p&gt;
+   *
+   * @param dataFile a {@link io.github.msdk.io.mzml.data.MzMLRawDataFile MzMLRawDataFile} object
+   *        the parser stores the data in
+   * @param is an {@link java.io.InputStream InputStream} of the MzML format data
+   * @param id the Scan ID
+   * @param scanNumber the Scan Number
+   * @param numOfDataPoints the number of data points in the m/z and intensity arrays
+   */
+<span class="fc" id="L83">  public MzMLMsScan(MzMLRawDataFile dataFile, InputStream is, String id, Integer scanNumber,</span>
+      int numOfDataPoints) {
+<span class="fc" id="L85">    this.cvParams = new MzMLCVGroup();</span>
+<span class="fc" id="L86">    this.precursorList = new MzMLPrecursorList();</span>
+<span class="fc" id="L87">    this.productList = new MzMLProductList();</span>
+<span class="fc" id="L88">    this.scanList = new MzMLScanList();</span>
+<span class="fc" id="L89">    this.dataFile = dataFile;</span>
+<span class="fc" id="L90">    this.inputStream = is;</span>
+<span class="fc" id="L91">    this.id = id;</span>
+<span class="fc" id="L92">    this.scanNumber = scanNumber;</span>
+<span class="fc" id="L93">    this.numOfDataPoints = numOfDataPoints;</span>
+<span class="fc" id="L94">    this.mzBinaryDataInfo = null;</span>
+<span class="fc" id="L95">    this.intensityBinaryDataInfo = null;</span>
+<span class="fc" id="L96">    this.spectrumType = null;</span>
+<span class="fc" id="L97">    this.tic = null;</span>
+<span class="fc" id="L98">    this.retentionTime = null;</span>
+<span class="fc" id="L99">    this.mzRange = null;</span>
+<span class="fc" id="L100">    this.mzScanWindowRange = null;</span>
+<span class="fc" id="L101">    this.mzValues = null;</span>
+<span class="fc" id="L102">    this.intensityValues = null;</span>
+
+<span class="fc" id="L104">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * getCVParams.
+   * &lt;/p&gt;
+   *
+   * @return a {@link java.util.ArrayList} object.
+   */
+  public MzMLCVGroup getCVParams() {
+<span class="fc" id="L114">    return cvParams;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Getter for the field &lt;code&gt;mzBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public MzMLBinaryDataInfo getMzBinaryDataInfo() {
+<span class="fc" id="L125">    return mzBinaryDataInfo;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Setter for the field &lt;code&gt;mzBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @param mzBinaryDataInfo a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public void setMzBinaryDataInfo(MzMLBinaryDataInfo mzBinaryDataInfo) {
+<span class="fc" id="L136">    this.mzBinaryDataInfo = mzBinaryDataInfo;</span>
+<span class="fc" id="L137">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Getter for the field &lt;code&gt;intensityBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public MzMLBinaryDataInfo getIntensityBinaryDataInfo() {
+<span class="fc" id="L147">    return intensityBinaryDataInfo;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Setter for the field &lt;code&gt;intensityBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @param intensityBinaryDataInfo a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public void setIntensityBinaryDataInfo(MzMLBinaryDataInfo intensityBinaryDataInfo) {
+<span class="fc" id="L158">    this.intensityBinaryDataInfo = intensityBinaryDataInfo;</span>
+<span class="fc" id="L159">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * getInputStream.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml2.util.io.ByteBufferInputStream} object.
+   */
+  public InputStream getInputStream() {
+<span class="nc" id="L169">    return inputStream;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * setInputStream.
+   * &lt;/p&gt;
+   *
+   * @param inputStream a {@link java.io.InputStream} object.
+   */
+  public void setInputStream(InputStream inputStream) {
+<span class="fc" id="L180">    this.inputStream = inputStream;</span>
+<span class="fc" id="L181">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * getPrecursorList.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLPrecursorList} object.
+   */
+  public MzMLPrecursorList getPrecursorList() {
+<span class="fc" id="L191">    return precursorList;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * getProductList.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLProductList} object.
+   */
+  public MzMLProductList getProductList() {
+<span class="nc" id="L202">    return productList;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * getScanList.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLScanList} object.
+   */
+  public MzMLScanList getScanList() {
+<span class="fc" id="L213">    return scanList;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Getter for the field &lt;code&gt;id&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @return a {@link java.lang.String} object.
+   */
+  public String getId() {
+<span class="nc" id="L224">    return id;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Integer getNumberOfDataPoints() {
+<span class="fc" id="L230">    return getMzBinaryDataInfo().getArrayLength();</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public double[] getMzValues(double array[]) {
+<span class="fc bfc" id="L236" title="All 2 branches covered.">    if (mzValues == null) {</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">      if (getMzBinaryDataInfo().getArrayLength() != numOfDataPoints) {</span>
+<span class="nc" id="L238">        logger.warn(</span>
+<span class="nc" id="L239">            &quot;m/z binary data array contains a different array length from the default array length of the scan (#&quot;</span>
+<span class="nc" id="L240">                + getScanNumber() + &quot;)&quot;);</span>
+      }
+
+      try {
+<span class="fc" id="L244">        mzValues = MzMLPeaksDecoder.decodeToDouble(inputStream, getMzBinaryDataInfo(), array);</span>
+<span class="pc" id="L245">      } catch (Exception e) {</span>
+<span class="nc" id="L246">        throw (new MSDKRuntimeException(e));</span>
+      }
+    }
+
+<span class="pc bpc" id="L250" title="3 of 4 branches missed.">    if (array == null || array.length &lt; getNumberOfDataPoints()) {</span>
+<span class="fc" id="L251">      array = new double[getNumberOfDataPoints()];</span>
+
+<span class="fc" id="L253">      System.arraycopy(mzValues, 0, array, 0, numOfDataPoints);</span>
+    }
+
+<span class="fc" id="L256">    return array;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float[] getIntensityValues(float array[]) {
+<span class="fc bfc" id="L262" title="All 2 branches covered.">    if (intensityValues == null) {</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">      if (getIntensityBinaryDataInfo().getArrayLength() != numOfDataPoints) {</span>
+<span class="nc" id="L264">        logger.warn(</span>
+<span class="nc" id="L265">            &quot;Intensity binary data array contains a different array length from the default array length of the scan (#&quot;</span>
+<span class="nc" id="L266">                + getScanNumber() + &quot;)&quot;);</span>
+      }
+
+      try {
+<span class="fc" id="L270">        intensityValues =</span>
+<span class="fc" id="L271">            MzMLPeaksDecoder.decodeToFloat(inputStream, getIntensityBinaryDataInfo(), array);</span>
+<span class="pc" id="L272">      } catch (Exception e) {</span>
+<span class="nc" id="L273">        throw (new MSDKRuntimeException(e));</span>
+      }
+    }
+
+<span class="pc bpc" id="L277" title="3 of 4 branches missed.">    if (array == null || array.length &lt; numOfDataPoints) {</span>
+<span class="fc" id="L278">      array = new float[numOfDataPoints];</span>
+
+<span class="fc" id="L280">      System.arraycopy(intensityValues, 0, array, 0, numOfDataPoints);</span>
+    }
+
+<span class="fc" id="L283">    return array;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public MsSpectrumType getSpectrumType() {
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">    if (spectrumType == null) {</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">      if (getCVValue(MzMLCV.cvCentroidSpectrum).isPresent())</span>
+<span class="fc" id="L291">        spectrumType = MsSpectrumType.CENTROIDED;</span>
+
+<span class="fc bfc" id="L293" title="All 2 branches covered.">      if (getCVValue(MzMLCV.cvProfileSpectrum).isPresent())</span>
+<span class="fc" id="L294">        spectrumType = MsSpectrumType.PROFILE;</span>
+
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">      if (spectrumType != null)</span>
+<span class="fc" id="L297">        return spectrumType;</span>
+
+<span class="nc" id="L299">      spectrumType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(getMzValues(),</span>
+<span class="nc" id="L300">          getIntensityValues(), numOfDataPoints);</span>
+    }
+<span class="nc" id="L302">    return spectrumType;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getTIC() {
+<span class="fc bfc" id="L308" title="All 2 branches covered.">    if (tic == null)</span>
+      try {
+<span class="fc" id="L310">        tic = MsSpectrumUtil.getTIC(getIntensityValues(), getNumberOfDataPoints());</span>
+<span class="pc" id="L311">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L312">        throw (new MSDKRuntimeException(</span>
+<span class="nc" id="L313">            &quot;Could not convert TIC value in mzML file to a float\n&quot; + e));</span>
+      }
+
+<span class="fc" id="L316">    return tic;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Range&lt;Double&gt; getMzRange() {
+<span class="fc bfc" id="L322" title="All 2 branches covered.">    if (mzRange == null) {</span>
+<span class="fc" id="L323">      Optional&lt;String&gt; cvv = getCVValue(MzMLCV.cvLowestMz);</span>
+<span class="fc" id="L324">      Optional&lt;String&gt; cvv1 = getCVValue(MzMLCV.cvHighestMz);</span>
+<span class="pc bpc" id="L325" title="2 of 4 branches missed.">      if (!cvv.isPresent() || !cvv1.isPresent()) {</span>
+<span class="nc" id="L326">        mzRange = MsSpectrumUtil.getMzRange(getMzValues(), getMzBinaryDataInfo().getArrayLength());</span>
+<span class="nc" id="L327">        return mzRange;</span>
+      }
+      try {
+<span class="fc" id="L330">        mzRange = Range.closed(Double.valueOf(cvv.get()), Double.valueOf(cvv1.get()));</span>
+<span class="pc" id="L331">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L332">        throw (new MSDKRuntimeException(</span>
+<span class="nc" id="L333">            &quot;Could not convert mz range value in mzML file to a double\n&quot; + e));</span>
+      }
+    }
+<span class="fc" id="L336">    return mzRange;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public RawDataFile getRawDataFile() {
+<span class="nc" id="L342">    return dataFile;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Integer getScanNumber() {
+<span class="fc" id="L348">    return scanNumber;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public String getScanDefinition() {
+<span class="fc" id="L354">    Optional&lt;String&gt; scanDefinition = Optional.empty();</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">    if (!getScanList().getScans().isEmpty()) {</span>
+<span class="fc" id="L356">      scanDefinition = getCVValue(getScanList().getScans().get(0), MzMLCV.cvScanFilterString);</span>
+    }
+<span class="fc" id="L358">    return scanDefinition.orElse(&quot;&quot;);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public String getMsFunction() {
+<span class="nc" id="L364">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Integer getMsLevel() {
+<span class="fc" id="L370">    Integer msLevel = 1;</span>
+<span class="fc" id="L371">    Optional&lt;String&gt; value = getCVValue(MzMLCV.cvMSLevel);</span>
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">    if (value.isPresent())</span>
+<span class="fc" id="L373">      msLevel = Integer.parseInt(value.get());</span>
+<span class="fc" id="L374">    return msLevel;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public MsScanType getMsScanType() {
+<span class="nc" id="L380">    return MsScanType.UNKNOWN;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Range&lt;Double&gt; getScanningRange() {
+<span class="nc bnc" id="L386" title="All 2 branches missed.">    if (mzScanWindowRange == null) {</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">      if (!getScanList().getScans().isEmpty()) {</span>
+<span class="nc" id="L388">        Optional&lt;MzMLScanWindowList&gt; scanWindowList =</span>
+<span class="nc" id="L389">            getScanList().getScans().get(0).getScanWindowList();</span>
+<span class="nc bnc" id="L390" title="All 4 branches missed.">        if (scanWindowList.isPresent() &amp;&amp; !scanWindowList.get().getScanWindows().isEmpty()) {</span>
+<span class="nc" id="L391">          MzMLScanWindow scanWindow = scanWindowList.get().getScanWindows().get(0);</span>
+<span class="nc" id="L392">          Optional&lt;String&gt; cvv = getCVValue(scanWindow, MzMLCV.cvScanWindowLowerLimit);</span>
+<span class="nc" id="L393">          Optional&lt;String&gt; cvv1 = getCVValue(scanWindow, MzMLCV.cvScanWindowUpperLimit);</span>
+<span class="nc bnc" id="L394" title="All 4 branches missed.">          if (!cvv.isPresent() || !cvv1.isPresent()) {</span>
+<span class="nc" id="L395">            mzScanWindowRange = getMzRange();</span>
+<span class="nc" id="L396">            return mzScanWindowRange;</span>
+          }
+          try {
+<span class="nc" id="L399">            mzScanWindowRange = Range.closed(Double.valueOf(cvv.get()), Double.valueOf(cvv1.get()));</span>
+<span class="nc" id="L400">          } catch (NumberFormatException e) {</span>
+<span class="nc" id="L401">            throw (new MSDKRuntimeException(</span>
+<span class="nc" id="L402">                &quot;Could not convert scan window range value in mzML file to a double\n&quot; + e));</span>
+          }
+        }
+      }
+    }
+
+<span class="nc" id="L408">    return mzScanWindowRange;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public PolarityType getPolarity() {
+<span class="fc bfc" id="L414" title="All 2 branches covered.">    if (getCVValue(MzMLCV.cvPolarityPositive).isPresent())</span>
+<span class="fc" id="L415">      return PolarityType.POSITIVE;</span>
+
+<span class="fc bfc" id="L417" title="All 2 branches covered.">    if (getCVValue(MzMLCV.cvPolarityNegative).isPresent())</span>
+<span class="fc" id="L418">      return PolarityType.NEGATIVE;</span>
+
+    // Check in the scans of the spectrum for Polarity
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">    if (!getScanList().getScans().isEmpty()) {</span>
+<span class="fc" id="L422">      MzMLScan scan = getScanList().getScans().get(0);</span>
+<span class="pc bpc" id="L423" title="1 of 2 branches missed.">      if (getCVValue(scan, MzMLCV.cvPolarityPositive).isPresent())</span>
+<span class="fc" id="L424">        return PolarityType.POSITIVE;</span>
+
+<span class="nc bnc" id="L426" title="All 2 branches missed.">      if (getCVValue(scan, MzMLCV.cvPolarityNegative).isPresent())</span>
+<span class="nc" id="L427">        return PolarityType.NEGATIVE;</span>
+    }
+
+<span class="nc" id="L430">    return PolarityType.UNKNOWN;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public ActivationInfo getSourceInducedFragmentation() {
+<span class="nc" id="L436">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public List&lt;IsolationInfo&gt; getIsolations() {
+<span class="fc bfc" id="L442" title="All 2 branches covered.">    if (precursorList.getPrecursorElements().size() == 0)</span>
+<span class="fc" id="L443">      return Collections.emptyList();</span>
+
+<span class="fc" id="L445">    List&lt;IsolationInfo&gt; isolations = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L447" title="All 2 branches covered.">    for (MzMLPrecursorElement precursor : precursorList.getPrecursorElements()) {</span>
+<span class="fc" id="L448">      Optional&lt;String&gt; precursorMz = Optional.empty();</span>
+<span class="fc" id="L449">      Optional&lt;String&gt; precursorCharge = Optional.empty();</span>
+<span class="fc" id="L450">      Optional&lt;String&gt; isolationWindowTarget = Optional.empty();</span>
+<span class="fc" id="L451">      Optional&lt;String&gt; isolationWindowLower = Optional.empty();</span>
+<span class="fc" id="L452">      Optional&lt;String&gt; isolationWindowUpper = Optional.empty();</span>
+
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">      if (!precursor.getSelectedIonList().isPresent())</span>
+<span class="nc" id="L455">        return Collections.emptyList();</span>
+
+<span class="fc bfc" id="L457" title="All 2 branches covered.">      for (MzMLCVGroup cvGroup : precursor.getSelectedIonList().get().getSelectedIonList()) {</span>
+<span class="fc" id="L458">        precursorMz = getCVValue(cvGroup, MzMLCV.cvPrecursorMz);</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">        if (!precursorMz.isPresent())</span>
+<span class="fc" id="L460">          precursorMz = getCVValue(cvGroup, MzMLCV.cvMz);</span>
+<span class="fc" id="L461">        precursorCharge = getCVValue(cvGroup, MzMLCV.cvChargeState);</span>
+      }
+
+<span class="fc bfc" id="L464" title="All 2 branches covered.">      if (precursor.getIsolationWindow().isPresent()) {</span>
+<span class="fc" id="L465">        MzMLIsolationWindow isolationWindow = precursor.getIsolationWindow().get();</span>
+<span class="fc" id="L466">        isolationWindowTarget = getCVValue(isolationWindow, MzMLCV.cvIsolationWindowTarget);</span>
+<span class="fc" id="L467">        isolationWindowLower = getCVValue(isolationWindow, MzMLCV.cvIsolationWindowLowerOffset);</span>
+<span class="fc" id="L468">        isolationWindowUpper = getCVValue(isolationWindow, MzMLCV.cvIsolationWindowUpperOffset);</span>
+      }
+
+
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">      if (precursorMz.isPresent()) {</span>
+<span class="fc bfc" id="L473" title="All 2 branches covered.">        if (!isolationWindowTarget.isPresent())</span>
+<span class="fc" id="L474">          isolationWindowTarget = precursorMz;</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">        if (!isolationWindowLower.isPresent())</span>
+<span class="fc" id="L476">          isolationWindowLower = Optional.ofNullable(&quot;0.5&quot;);</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">        if (!isolationWindowUpper.isPresent())</span>
+<span class="fc" id="L478">          isolationWindowUpper = Optional.ofNullable(&quot;0.5&quot;);</span>
+<span class="fc" id="L479">        Range&lt;Double&gt; isolationRange = Range.closed(</span>
+<span class="fc" id="L480">            Double.valueOf(isolationWindowTarget.get())</span>
+<span class="fc" id="L481">                - Double.valueOf(isolationWindowLower.get()),</span>
+<span class="fc" id="L482">            Double.valueOf(isolationWindowTarget.get())</span>
+<span class="fc" id="L483">                + Double.valueOf(isolationWindowLower.get()));</span>
+<span class="fc" id="L484">        Integer precursorChargeInt =</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">            precursorCharge.isPresent() ? Integer.valueOf(precursorCharge.get()) : null;</span>
+<span class="fc" id="L486">        IsolationInfo isolation = new SimpleIsolationInfo(isolationRange, null,</span>
+<span class="fc" id="L487">            Double.valueOf(precursorMz.get()), precursorChargeInt, null);</span>
+<span class="fc" id="L488">        isolations.add(isolation);</span>
+
+      }
+
+    }
+
+<span class="fc" id="L494">    return Collections.unmodifiableList(isolations);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getRetentionTime() {
+<span class="pc bpc" id="L500" title="1 of 2 branches missed.">    if (retentionTime != null)</span>
+<span class="nc" id="L501">      return retentionTime;</span>
+
+<span class="pc bpc" id="L503" title="1 of 2 branches missed.">    if (!getScanList().getScans().isEmpty()) {</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">      for (MzMLCVParam param : getScanList().getScans().get(0).getCVParamsList()) {</span>
+<span class="fc" id="L505">        String accession = param.getAccession();</span>
+<span class="fc" id="L506">        Optional&lt;String&gt; unitAccession = param.getUnitAccession();</span>
+<span class="fc" id="L507">        Optional&lt;String&gt; value = param.getValue();</span>
+
+        // check accession
+<span class="pc bpc" id="L510" title="10 of 13 branches missed.">        switch (accession) {</span>
+          case MzMLCV.MS_RT_SCAN_START:
+          case MzMLCV.MS_RT_RETENTION_TIME:
+          case MzMLCV.MS_RT_RETENTION_TIME_LOCAL:
+          case MzMLCV.MS_RT_RETENTION_TIME_NORMALIZED:
+<span class="pc bpc" id="L515" title="1 of 2 branches missed.">            if (!value.isPresent()) {</span>
+<span class="nc" id="L516">              throw new IllegalStateException(</span>
+<span class="nc" id="L517">                  &quot;For retention time cvParam the `value` must have been specified&quot;);</span>
+            }
+<span class="pc bpc" id="L519" title="1 of 2 branches missed.">            if (unitAccession.isPresent()) {</span>
+              // there was a time unit defined
+<span class="pc bpc" id="L521" title="6 of 10 branches missed.">              switch (param.getUnitAccession().get()) {</span>
+                case MzMLCV.cvUnitsMin1:
+                case MzMLCV.cvUnitsMin2:
+<span class="fc" id="L524">                  retentionTime = Float.parseFloat(value.get()) * 60f;</span>
+<span class="fc" id="L525">                  break;</span>
+                case MzMLCV.cvUnitsSec:
+<span class="fc" id="L527">                  retentionTime = Float.parseFloat(value.get());</span>
+<span class="fc" id="L528">                  break;</span>
+
+                default:
+<span class="nc" id="L531">                  throw new IllegalStateException(</span>
+<span class="nc" id="L532">                      &quot;Unknown time unit encountered: [&quot; + unitAccession + &quot;]&quot;);</span>
+              }
+<span class="nc" id="L534">            } else {</span>
+              // no time units defined, return the value as is
+<span class="nc" id="L536">              retentionTime = Float.parseFloat(value.get());</span>
+            }
+<span class="nc" id="L538">            break;</span>
+
+          default:
+            continue; // not a retention time parameter
+        }
+      }
+    }
+
+<span class="fc" id="L546">    return retentionTime;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public MzTolerance getMzTolerance() {
+<span class="nc" id="L552">    return null;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Search for the CV Parameter value for the given accession in the
+   * {@link io.github.msdk.datamodel.rawdata.MsScan MsScan}'s CV Parameters
+   * &lt;/p&gt;
+   *
+   * @param accession the CV Parameter accession as {@link java.lang.String String}
+   * @return an {@link java.util.Optional Optional&lt;String&gt;} containing the CV Parameter value for
+   *         the given accession, if present &lt;br&gt;
+   *         An empty {@link java.util.Optional Optional&lt;String&gt;} otherwise
+   */
+  public Optional&lt;String&gt; getCVValue(String accession) {
+<span class="fc" id="L567">    return getCVValue(cvParams, accession);</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Search for the CV Parameter value for the given accession in the given
+   * {@link io.github.msdk.io.mzml.data.MzMLCVGroup MzMLCVGroup}
+   * &lt;/p&gt;
+   *
+   * @param group the {@link io.github.msdk.io.mzml.data.MzMLCVGroup MzMLCVGroup} to search through
+   * @param accession the CV Parameter accession as {@link java.lang.String String}
+   * @return an {@link java.util.Optional Optional&lt;String&gt;} containing the CV Parameter value for
+   *         the given accession, if present &lt;br&gt;
+   *         An empty {@link java.util.Optional Optional&lt;String&gt;} otherwise
+   */
+  public Optional&lt;String&gt; getCVValue(MzMLCVGroup group, String accession) {
+    Optional&lt;String&gt; value;
+<span class="fc bfc" id="L584" title="All 2 branches covered.">    for (MzMLCVParam cvParam : group.getCVParamsList()) {</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">      if (cvParam.getAccession().equals(accession)) {</span>
+<span class="fc" id="L586">        value = cvParam.getValue();</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">        if (!value.isPresent())</span>
+<span class="fc" id="L588">          value = Optional.ofNullable(&quot;&quot;);</span>
+<span class="fc" id="L589">        return value;</span>
+      }
+    }
+<span class="fc" id="L592">    return Optional.empty();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>

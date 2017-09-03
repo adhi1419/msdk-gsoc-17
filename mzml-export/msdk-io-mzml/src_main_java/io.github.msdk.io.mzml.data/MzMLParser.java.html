@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLParser.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLParser.java</span></div><h1>MzMLParser.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.io.IOUtils;
+
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.io.mzml.MzMLFileImportMethod;
+import io.github.msdk.io.mzml.util.TagTracker;
+import javolution.text.CharArray;
+import javolution.xml.internal.stream.XMLStreamReaderImpl;
+import javolution.xml.stream.XMLStreamConstants;
+import javolution.xml.stream.XMLStreamReader;
+
+/**
+ * &lt;p&gt;
+ * Used to parse mzML meta-data and initialize {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo
+ * MzMLBinaryDataInfo}
+ * &lt;/p&gt;
+ */
+public class MzMLParser {
+
+  private Vars vars;
+  private TagTracker tracker;
+  private final MzMLRawDataFile newRawFile;
+  private final MzMLFileImportMethod importer;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for {@link io.github.msdk.io.mzml.data.MzMLParser MzMLParser}
+   * &lt;/p&gt;
+   *
+   * @param importer an instance of an initialized
+   *        {@link io.github.msdk.io.mzml.MzMLFileImportMethod MzMLFileImportMethod}
+   */
+<span class="fc" id="L55">  public MzMLParser(MzMLFileImportMethod importer) {</span>
+<span class="fc" id="L56">    this.vars = new Vars();</span>
+<span class="fc" id="L57">    this.tracker = new TagTracker();</span>
+<span class="fc" id="L58">    this.importer = importer;</span>
+<span class="fc" id="L59">    this.newRawFile = new MzMLRawDataFile(importer.getMzMLFile(), vars.msFunctionsList,</span>
+<span class="fc" id="L60">        vars.spectrumList, vars.chromatogramsList);</span>
+<span class="fc" id="L61">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Carry out the required parsing of the mzML data when the
+   * {@link javolution.xml.internal.stream.XMLStreamReaderImpl XMLStreamReaderImpl} enters the given
+   * tag
+   * &lt;/p&gt;
+   *
+   * @param xmlStreamReader an instance of {@link javolution.xml.internal.stream.XMLStreamReaderImpl
+   * XMLStreamReaderImpl
+   * @param is {@link java.io.InputStream InputStream} of the mzML data
+   * @param openingTagName The tag &lt;code&gt;xmlStreamReader&lt;/code&gt; entered
+   */
+  public void processOpeningTag(XMLStreamReaderImpl xmlStreamReader, InputStream is,
+      CharArray openingTagName) {
+<span class="fc" id="L77">    tracker.enter(openingTagName);</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">    if (tracker.inside(MzMLTags.TAG_REF_PARAM_GROUP_LIST)) {</span>
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">      if (openingTagName.contentEquals(MzMLTags.TAG_REF_PARAM_GROUP)) {</span>
+<span class="fc" id="L82">        final CharArray id = getRequiredAttribute(xmlStreamReader, &quot;id&quot;);</span>
+<span class="fc" id="L83">        vars.referenceableParamGroup = new MzMLReferenceableParamGroup(id.toString());</span>
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc" id="L86">        MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L87">        vars.referenceableParamGroup.addCVParam(cvParam);</span>
+
+      }
+    }
+
+<span class="fc bfc" id="L92" title="All 2 branches covered.">    if (tracker.inside(MzMLTags.TAG_SPECTRUM_LIST)) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">      if (openingTagName.contentEquals(MzMLTags.TAG_SPECTRUM)) {</span>
+<span class="fc" id="L94">        String id = getRequiredAttribute(xmlStreamReader, &quot;id&quot;).toString();</span>
+<span class="fc" id="L95">        Integer index = getRequiredAttribute(xmlStreamReader, &quot;index&quot;).toInt();</span>
+<span class="fc" id="L96">        vars.defaultArrayLength =</span>
+<span class="fc" id="L97">            getRequiredAttribute(xmlStreamReader, &quot;defaultArrayLength&quot;).toInt();</span>
+<span class="fc" id="L98">        Integer scanNumber = getScanNumber(id).orElse(index + 1);</span>
+<span class="fc" id="L99">        vars.spectrum = new MzMLMsScan(newRawFile, is, id, scanNumber, vars.defaultArrayLength);</span>
+
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_BINARY_DATA_ARRAY)) {</span>
+<span class="fc" id="L103">        vars.skipBinaryDataArray = false;</span>
+<span class="fc" id="L104">        int encodedLength = getRequiredAttribute(xmlStreamReader, &quot;encodedLength&quot;).toInt();</span>
+<span class="fc" id="L105">        final CharArray arrayLength = xmlStreamReader.getAttributeValue(null, &quot;arrayLength&quot;);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (arrayLength != null) {</span>
+<span class="fc" id="L107">          vars.binaryDataInfo = new MzMLBinaryDataInfo(encodedLength, arrayLength.toInt());</span>
+<span class="fc" id="L108">        } else {</span>
+<span class="fc" id="L109">          vars.binaryDataInfo = new MzMLBinaryDataInfo(encodedLength, vars.defaultArrayLength);</span>
+        }
+
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_SCAN)) {</span>
+<span class="fc" id="L114">        vars.scan = new MzMLScan();</span>
+
+<span class="fc bfc" id="L116" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_SCAN_WINDOW_LIST)) {</span>
+<span class="fc" id="L117">        vars.scanWindowList = new MzMLScanWindowList();</span>
+
+<span class="fc bfc" id="L119" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_SCAN_WINDOW)) {</span>
+<span class="fc" id="L120">        vars.scanWindow = new MzMLScanWindow();</span>
+
+<span class="fc bfc" id="L122" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (!tracker.inside(MzMLTags.TAG_BINARY_DATA_ARRAY_LIST)</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">            &amp;&amp; !tracker.inside(MzMLTags.TAG_PRODUCT_LIST)</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            &amp;&amp; !tracker.inside(MzMLTags.TAG_PRECURSOR_LIST)</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">            &amp;&amp; !tracker.inside(MzMLTags.TAG_SCAN_LIST) &amp;&amp; vars.spectrum != null) {</span>
+<span class="fc" id="L127">          MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+
+          // do not import the tic from the mzml file, we can calculate it on demand later
+<span class="fc bfc" id="L130" title="All 2 branches covered.">          if (!cvParam.getAccession().equals(MzMLCV.cvTIC))</span>
+<span class="fc" id="L131">            vars.spectrum.getCVParams().addCVParam(cvParam);</span>
+
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        } else if (tracker.inside(MzMLTags.TAG_SCAN_LIST)) {</span>
+<span class="fc" id="L134">          MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">          if (!tracker.inside(MzMLTags.TAG_SCAN_WINDOW))</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            if (!tracker.inside(MzMLTags.TAG_SCAN))</span>
+<span class="fc" id="L137">              vars.spectrum.getScanList().addCVParam(cvParam);</span>
+            else
+<span class="fc" id="L139">              vars.scan.addCVParam(cvParam);</span>
+          else
+<span class="fc" id="L141">            vars.scanWindow.addCVParam(cvParam);</span>
+
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        } else if (tracker.inside(MzMLTags.TAG_SPECTRUM)</span>
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">            &amp;&amp; tracker.inside(MzMLTags.TAG_BINARY_DATA_ARRAY) &amp;&amp; !vars.skipBinaryDataArray) {</span>
+<span class="fc" id="L145">          String accession = getRequiredAttribute(xmlStreamReader, &quot;accession&quot;).toString();</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">          if (vars.binaryDataInfo.isBitLengthAccession(accession)) {</span>
+<span class="fc" id="L147">            vars.binaryDataInfo.setBitLength(accession);</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">          } else if (vars.binaryDataInfo.isCompressionTypeAccession(accession)) {</span>
+<span class="fc" id="L149">            manageCompression(vars.binaryDataInfo, accession);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">          } else if (vars.binaryDataInfo.isArrayTypeAccession(accession)) {</span>
+<span class="fc" id="L151">            vars.binaryDataInfo.setArrayType(accession);</span>
+<span class="fc" id="L152">          } else {</span>
+<span class="fc" id="L153">            vars.skipBinaryDataArray = true;</span>
+          }
+
+        }
+
+
+<span class="fc bfc" id="L159" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_BINARY)) {</span>
+<span class="pc bpc" id="L160" title="1 of 4 branches missed.">        if (vars.spectrum != null &amp;&amp; !vars.skipBinaryDataArray) {</span>
+<span class="fc" id="L161">          int bomOffset = xmlStreamReader.getLocation().getBomLength();</span>
+          // TODO Fetch long value from getCharacterOffset()
+<span class="fc" id="L163">          vars.binaryDataInfo</span>
+<span class="fc" id="L164">              .setPosition(xmlStreamReader.getLocation().getCharacterOffset() + bomOffset);</span>
+        }
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (!vars.skipBinaryDataArray) {</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">          if (MzMLCV.cvMzArray.equals(vars.binaryDataInfo.getArrayType().getAccession())) {</span>
+<span class="fc" id="L168">            vars.spectrum.setMzBinaryDataInfo(vars.binaryDataInfo);</span>
+          }
+<span class="fc bfc" id="L170" title="All 2 branches covered.">          if (MzMLCV.cvIntensityArray.equals(vars.binaryDataInfo.getArrayType().getAccession())) {</span>
+<span class="fc" id="L171">            vars.spectrum.setIntensityBinaryDataInfo(vars.binaryDataInfo);</span>
+          }
+        }
+
+
+<span class="fc bfc" id="L176" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_REF_PARAM_GROUP_REF)) {</span>
+<span class="fc" id="L177">        String refValue = getRequiredAttribute(xmlStreamReader, &quot;ref&quot;).toString();</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        for (MzMLReferenceableParamGroup ref : vars.referenceableParamGroupList) {</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">          if (ref.getParamGroupName().equals(refValue)) {</span>
+<span class="fc" id="L180">            vars.spectrum.getCVParams().getCVParamsList().addAll(ref.getCVParamsList());</span>
+<span class="fc" id="L181">            break;</span>
+          }
+        }
+
+      }
+
+<span class="fc bfc" id="L187" title="All 2 branches covered.">      if (tracker.inside(MzMLTags.TAG_PRECURSOR_LIST)) {</span>
+
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (openingTagName.contentEquals(MzMLTags.TAG_PRECURSOR)) {</span>
+<span class="fc" id="L190">          final CharArray spectrumRef =</span>
+<span class="fc" id="L191">              xmlStreamReader.getAttributeValue(null, MzMLTags.ATTR_SPECTRUM_REF);</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">          String spectrumRefString = spectrumRef == null ? null : spectrumRef.toString();</span>
+<span class="fc" id="L193">          vars.precursor = new MzMLPrecursorElement(spectrumRefString);</span>
+
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        } else if (openingTagName.contentEquals(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="fc" id="L196">          vars.isolationWindow = new MzMLIsolationWindow();</span>
+
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        } else if (openingTagName.contentEquals(MzMLTags.TAG_SELECTED_ION_LIST)) {</span>
+<span class="fc" id="L199">          vars.selectedIonList = new MzMLPrecursorSelectedIonList();</span>
+
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        } else if (openingTagName.contentEquals(MzMLTags.TAG_ACTIVATION)) {</span>
+<span class="fc" id="L202">          vars.activation = new MzMLPrecursorActivation();</span>
+
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        } else if (tracker.inside(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">          if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc" id="L206">            MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L207">            vars.isolationWindow.addCVParam(cvParam);</span>
+          }
+
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        } else if (tracker.inside(MzMLTags.TAG_SELECTED_ION_LIST)) {</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">          if (openingTagName.contentEquals(MzMLTags.TAG_SELECTED_ION)) {</span>
+<span class="fc" id="L212">            vars.selectedIon = new MzMLPrecursorSelectedIon();</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">          } else if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc" id="L214">            MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L215">            vars.selectedIon.addCVParam(cvParam);</span>
+          }
+
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        } else if (tracker.inside(MzMLTags.TAG_ACTIVATION)) {</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">          if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc" id="L220">            MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L221">            vars.activation.addCVParam(cvParam);</span>
+          }
+        }
+      }
+
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">      if (tracker.inside(MzMLTags.TAG_PRODUCT_LIST)) {</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (openingTagName.contentEquals(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="nc" id="L228">          vars.isolationWindow = new MzMLIsolationWindow();</span>
+
+<span class="nc bnc" id="L230" title="All 2 branches missed.">        } else if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="nc" id="L231">          MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="nc" id="L232">          vars.isolationWindow.addCVParam(cvParam);</span>
+        }
+
+      }
+
+<span class="pc bfc" id="L237" title="All 2 branches covered.">    } else if (tracker.inside(MzMLTags.TAG_CHROMATOGRAM_LIST)) {</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">      if (openingTagName.contentEquals(MzMLTags.TAG_CHROMATOGRAM)) {</span>
+<span class="fc" id="L239">        String chromatogramId = getRequiredAttribute(xmlStreamReader, &quot;id&quot;).toString();</span>
+<span class="fc" id="L240">        Integer chromatogramNumber = getRequiredAttribute(xmlStreamReader, &quot;index&quot;).toInt() + 1;</span>
+<span class="fc" id="L241">        vars.defaultArrayLength =</span>
+<span class="fc" id="L242">            getRequiredAttribute(xmlStreamReader, &quot;defaultArrayLength&quot;).toInt();</span>
+<span class="fc" id="L243">        vars.chromatogram = new MzMLChromatogram(newRawFile, is, chromatogramId, chromatogramNumber,</span>
+<span class="fc" id="L244">            vars.defaultArrayLength);</span>
+
+<span class="fc bfc" id="L246" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if (!tracker.inside(MzMLTags.TAG_BINARY_DATA_ARRAY)</span>
+<span class="fc bfc" id="L248" title="All 4 branches covered.">            &amp;&amp; !tracker.inside(MzMLTags.TAG_PRECURSOR) &amp;&amp; !tracker.inside(MzMLTags.TAG_PRODUCT)</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">            &amp;&amp; vars.chromatogram != null) {</span>
+<span class="fc" id="L250">          MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L251">          vars.chromatogram.getCVParams().addCVParam(cvParam);;</span>
+        }
+
+<span class="fc bfc" id="L254" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_BINARY_DATA_ARRAY)) {</span>
+<span class="fc" id="L255">        vars.skipBinaryDataArray = false;</span>
+<span class="fc" id="L256">        int encodedLength = getRequiredAttribute(xmlStreamReader, &quot;encodedLength&quot;).toInt();</span>
+<span class="fc" id="L257">        final CharArray arrayLength = xmlStreamReader.getAttributeValue(null, &quot;arrayLength&quot;);</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        if (arrayLength != null) {</span>
+<span class="nc" id="L259">          vars.binaryDataInfo = new MzMLBinaryDataInfo(encodedLength, arrayLength.toInt());</span>
+<span class="nc" id="L260">        } else {</span>
+<span class="fc" id="L261">          vars.binaryDataInfo = new MzMLBinaryDataInfo(encodedLength, vars.defaultArrayLength);</span>
+        }
+
+<span class="fc bfc" id="L264" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_BINARY)) {</span>
+<span class="pc bpc" id="L265" title="2 of 4 branches missed.">        if (vars.chromatogram != null &amp;&amp; !vars.skipBinaryDataArray) {</span>
+<span class="fc" id="L266">          int bomOffset = xmlStreamReader.getLocation().getBomLength();</span>
+          // TODO Fetch long value from getCharacterOffset()
+<span class="fc" id="L268">          vars.binaryDataInfo</span>
+<span class="fc" id="L269">              .setPosition(xmlStreamReader.getLocation().getCharacterOffset() + bomOffset);</span>
+        }
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">        if (!vars.skipBinaryDataArray) {</span>
+<span class="fc" id="L272">          if (MzMLCV.cvRetentionTimeArray</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">              .equals(vars.binaryDataInfo.getArrayType().getAccession())) {</span>
+<span class="fc" id="L274">            vars.chromatogram.setRtBinaryDataInfo(vars.binaryDataInfo);;</span>
+          }
+<span class="fc bfc" id="L276" title="All 2 branches covered.">          if (MzMLCV.cvIntensityArray.equals(vars.binaryDataInfo.getArrayType().getAccession())) {</span>
+<span class="fc" id="L277">            vars.chromatogram.setIntensityBinaryDataInfo(vars.binaryDataInfo);</span>
+          }
+        }
+
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_REF_PARAM_GROUP_REF)) {</span>
+<span class="nc" id="L282">        String refValue = xmlStreamReader.getAttributeValue(null, &quot;ref&quot;).toString();</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        for (MzMLReferenceableParamGroup ref : vars.referenceableParamGroupList) {</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">          if (ref.getParamGroupName().equals(refValue)) {</span>
+<span class="nc" id="L285">            vars.chromatogram.getCVParams().getCVParamsList().addAll(ref.getCVParamsList());</span>
+<span class="nc" id="L286">            break;</span>
+          }
+        }
+
+      }
+
+<span class="fc bfc" id="L292" title="All 2 branches covered.">      if (tracker.inside(MzMLTags.TAG_CHROMATOGRAM)</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">          &amp;&amp; tracker.inside(MzMLTags.TAG_BINARY_DATA_ARRAY)</span>
+<span class="pc bpc" id="L294" title="1 of 4 branches missed.">          &amp;&amp; openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM) &amp;&amp; vars.binaryDataInfo != null</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">          &amp;&amp; !vars.skipBinaryDataArray) {</span>
+<span class="fc" id="L296">        String accession = getRequiredAttribute(xmlStreamReader, &quot;accession&quot;).toString();</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">        if (vars.binaryDataInfo.isBitLengthAccession(accession)) {</span>
+<span class="fc" id="L298">          vars.binaryDataInfo.setBitLength(accession);</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">        } else if (vars.binaryDataInfo.isCompressionTypeAccession(accession)) {</span>
+<span class="fc" id="L300">          manageCompression(vars.binaryDataInfo, accession);</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        } else if (vars.binaryDataInfo.isArrayTypeAccession(accession)) {</span>
+<span class="fc" id="L302">          vars.binaryDataInfo.setArrayType(accession);</span>
+<span class="fc" id="L303">        } else {</span>
+<span class="nc" id="L304">          vars.skipBinaryDataArray = true;</span>
+        }
+
+      }
+
+<span class="fc bfc" id="L309" title="All 2 branches covered.">      if (openingTagName.contentEquals(MzMLTags.TAG_PRECURSOR)) {</span>
+<span class="fc" id="L310">        final CharArray spectrumRef = xmlStreamReader.getAttributeValue(null, &quot;spectrumRef&quot;);</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        String spectrumRefString = spectrumRef == null ? null : spectrumRef.toString();</span>
+<span class="fc" id="L312">        vars.precursor = new MzMLPrecursorElement(spectrumRefString);</span>
+
+<span class="fc bfc" id="L314" title="All 2 branches covered.">      } else if (openingTagName.contentEquals(MzMLTags.TAG_PRODUCT)) {</span>
+<span class="fc" id="L315">        vars.product = new MzMLProduct();</span>
+
+<span class="fc bfc" id="L317" title="All 2 branches covered.">      } else if (tracker.inside(MzMLTags.TAG_PRECURSOR)) {</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        if (openingTagName.contentEquals(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="fc" id="L319">          vars.isolationWindow = new MzMLIsolationWindow();</span>
+<span class="fc" id="L320">          vars.selectedIonList = new MzMLPrecursorSelectedIonList();</span>
+
+<span class="fc bfc" id="L322" title="All 2 branches covered.">        } else if (openingTagName.contentEquals(MzMLTags.TAG_ACTIVATION)) {</span>
+<span class="fc" id="L323">          vars.activation = new MzMLPrecursorActivation();</span>
+
+<span class="fc bfc" id="L325" title="All 2 branches covered.">        } else if (tracker.inside(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">          if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc" id="L327">            MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L328">            vars.isolationWindow.addCVParam(cvParam);</span>
+          }
+
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        } else if (tracker.inside(MzMLTags.TAG_SELECTED_ION_LIST)) {</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">          if (openingTagName.contentEquals(MzMLTags.TAG_SELECTED_ION)) {</span>
+<span class="nc" id="L333">            vars.selectedIon = new MzMLPrecursorSelectedIon();</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">          } else if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="nc" id="L335">            MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="nc" id="L336">            vars.selectedIon.addCVParam(cvParam);</span>
+          }
+
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">        } else if (tracker.inside(MzMLTags.TAG_ACTIVATION)) {</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">          if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc" id="L341">            MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L342">            vars.activation.addCVParam(cvParam);</span>
+          }
+        }
+<span class="fc bfc" id="L345" title="All 2 branches covered.">      } else if (tracker.inside(MzMLTags.TAG_PRODUCT)) {</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">        if (openingTagName.contentEquals(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="fc" id="L347">          vars.isolationWindow = new MzMLIsolationWindow();</span>
+
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">        } else if (tracker.inside(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">          if (openingTagName.contentEquals(MzMLTags.TAG_CV_PARAM)) {</span>
+<span class="fc" id="L351">            MzMLCVParam cvParam = createMzMLCVParam(xmlStreamReader);</span>
+<span class="fc" id="L352">            vars.isolationWindow.addCVParam(cvParam);</span>
+
+          }
+
+        }
+      }
+
+    }
+<span class="fc" id="L360">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Carry out the required parsing of the mzML data when the
+   * {@link javolution.xml.internal.stream.XMLStreamReaderImpl XMLStreamReaderImpl} exits the given
+   * tag
+   * &lt;/p&gt;
+   *
+   * @param xmlStreamReader an instance of {@link javolution.xml.internal.stream.XMLStreamReaderImpl
+   * XMLStreamReaderImpl
+   * @param closingTagName a {@link javolution.text.CharArray} object.
+   */
+  public void processClosingTag(XMLStreamReaderImpl xmlStreamReader, CharArray closingTagName) {
+<span class="fc" id="L374">    tracker.exit(closingTagName);</span>
+
+<span class="fc" id="L376">    CharArray s = closingTagName;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">    if (s.equals(MzMLTags.TAG_REF_PARAM_GROUP)) {</span>
+<span class="fc" id="L378">      vars.referenceableParamGroupList.add(vars.referenceableParamGroup);</span>
+
+<span class="fc bfc" id="L380" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_ISOLATION_WINDOW)) {</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">      if (tracker.inside(MzMLTags.TAG_PRECURSOR)) {</span>
+<span class="fc" id="L382">        vars.precursor.setIsolationWindow(vars.isolationWindow);</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">      } else if (tracker.inside(MzMLTags.TAG_PRODUCT)) {</span>
+<span class="fc" id="L384">        vars.product.setIsolationWindow(vars.isolationWindow);</span>
+      }
+
+<span class="fc bfc" id="L387" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_PRODUCT)) {</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">      if (tracker.inside(MzMLTags.TAG_SPECTRUM))</span>
+<span class="nc" id="L389">        vars.spectrum.getProductList().addProduct(vars.product);</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">      else if (tracker.inside(MzMLTags.TAG_CHROMATOGRAM))</span>
+<span class="fc" id="L391">        vars.chromatogram.setProdcut(vars.product);</span>
+
+<span class="fc bfc" id="L393" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_SELECTED_ION_LIST)) {</span>
+<span class="fc" id="L394">      vars.precursor.setSelectedIonList(vars.selectedIonList);</span>
+
+<span class="fc bfc" id="L396" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_ACTIVATION)) {</span>
+<span class="fc" id="L397">      vars.precursor.setActivation(vars.activation);</span>
+
+<span class="fc bfc" id="L399" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_SELECTED_ION)) {</span>
+<span class="fc" id="L400">      vars.selectedIonList.addSelectedIon(vars.selectedIon);</span>
+
+<span class="fc bfc" id="L402" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_PRECURSOR)) {</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">      if (tracker.inside(MzMLTags.TAG_SPECTRUM))</span>
+<span class="fc" id="L404">        vars.spectrum.getPrecursorList().addPrecursor(vars.precursor);</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">      else if (tracker.inside(MzMLTags.TAG_CHROMATOGRAM))</span>
+<span class="fc" id="L406">        vars.chromatogram.setPrecursor(vars.precursor);</span>
+
+<span class="fc bfc" id="L408" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_SCAN_WINDOW)) {</span>
+<span class="fc" id="L409">      vars.scanWindowList.addScanWindow(vars.scanWindow);</span>
+
+<span class="fc bfc" id="L411" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_SCAN_WINDOW_LIST)) {</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">      if (tracker.inside(MzMLTags.TAG_SPECTRUM))</span>
+<span class="fc" id="L413">        vars.scan.setScanWindowList(vars.scanWindowList);</span>
+
+<span class="fc bfc" id="L415" title="All 2 branches covered.">    } else if (s.equals(MzMLTags.TAG_SCAN)) {</span>
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">      if (tracker.inside(MzMLTags.TAG_SPECTRUM))</span>
+<span class="fc" id="L417">        vars.spectrum.getScanList().addScan(vars.scan);</span>
+
+<span class="fc bfc" id="L419" title="All 2 branches covered.">    } else if (tracker.inside(MzMLTags.TAG_SPECTRUM_LIST)) {</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">      if (closingTagName.contentEquals(MzMLTags.TAG_SPECTRUM)) {</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">        if (vars.spectrum.getMzBinaryDataInfo() != null</span>
+<span class="pc bpc" id="L422" title="2 of 4 branches missed.">            &amp;&amp; vars.spectrum.getIntensityBinaryDataInfo() != null &amp;&amp; (importer.getMzMLFile() != null</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">                || importer.getMsScanPredicate().test(vars.spectrum))) {</span>
+<span class="fc" id="L424">          vars.spectrumList.add(vars.spectrum);</span>
+        }
+      }
+
+<span class="fc bfc" id="L428" title="All 2 branches covered.">    } else if (tracker.inside(MzMLTags.TAG_CHROMATOGRAM_LIST)) {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">      if (closingTagName.contentEquals(MzMLTags.TAG_CHROMATOGRAM)) {</span>
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">        if (vars.chromatogram.getRtBinaryDataInfo() != null</span>
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">            &amp;&amp; vars.chromatogram.getIntensityBinaryDataInfo() != null</span>
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">            &amp;&amp; (importer.getMzMLFile() != null</span>
+<span class="nc bnc" id="L433" title="All 2 branches missed.">                || importer.getChromatogramPredicate().test(vars.chromatogram)))</span>
+<span class="fc" id="L434">          vars.chromatogramsList.add(vars.chromatogram);</span>
+      }
+
+    }
+
+<span class="fc" id="L439">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Carry out the required parsing of the mzML data when the
+   * {@link javolution.xml.internal.stream.XMLStreamReaderImpl XMLStreamReaderImpl} when
+   * {@link javolution.xml.stream.XMLStreamConstants#CHARACTERS CHARACTERS} are found
+   * &lt;/p&gt;
+   *
+   * @param xmlStreamReader an instance of {@link javolution.xml.internal.stream.XMLStreamReaderImpl
+   *        XMLStreamReaderImpl
+   */
+  public void processCharacters(XMLStreamReaderImpl xmlStreamReader) {
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">    if (!newRawFile.getOriginalFile().isPresent()</span>
+<span class="nc bnc" id="L453" title="All 4 branches missed.">        &amp;&amp; tracker.current().contentEquals(MzMLTags.TAG_BINARY) &amp;&amp; !vars.skipBinaryDataArray) {</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">      if (tracker.inside(MzMLTags.TAG_SPECTRUM_LIST)</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">          &amp;&amp; importer.getMsScanPredicate().test(vars.spectrum)) {</span>
+<span class="nc" id="L456">        vars.spectrum.setInputStream(IOUtils.toInputStream(xmlStreamReader.getText()));</span>
+<span class="nc bnc" id="L457" title="All 7 branches missed.">        switch (vars.binaryDataInfo.getArrayType().getAccession()) {</span>
+          case MzMLCV.cvMzArray:
+<span class="nc" id="L459">            vars.spectrum.getMzValues();</span>
+<span class="nc" id="L460">            break;</span>
+
+          case MzMLCV.cvIntensityArray:
+<span class="nc" id="L463">            vars.spectrum.getIntensityValues();</span>
+            break;
+        }
+<span class="nc bnc" id="L466" title="All 2 branches missed.">      } else if (tracker.inside(MzMLTags.TAG_CHROMATOGRAM_LIST)</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">          &amp;&amp; importer.getChromatogramPredicate().test(vars.chromatogram)) {</span>
+<span class="nc" id="L468">        vars.chromatogram.setInputStream(IOUtils.toInputStream(xmlStreamReader.getText()));</span>
+<span class="nc bnc" id="L469" title="All 7 branches missed.">        switch (vars.binaryDataInfo.getArrayType().getAccession()) {</span>
+          case MzMLCV.cvRetentionTimeArray:
+<span class="nc" id="L471">            vars.chromatogram.getRetentionTimes();</span>
+<span class="nc" id="L472">            break;</span>
+
+          case MzMLCV.cvIntensityArray:
+<span class="nc" id="L475">            vars.chromatogram.getIntensityBinaryDataInfo();</span>
+            break;
+        }
+      }
+    }
+<span class="fc" id="L480">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Call this method when the &lt;code&gt;xmlStreamReader&lt;/code&gt; enters &lt;code&gt;&amp;lt;cvParam&amp;gt;&lt;/code&gt; tag
+   * &lt;/p&gt;
+   * 
+   * @param xmlStreamReader an instance of {@link javolution.xml.internal.stream.XMLStreamReaderImpl
+   * XMLStreamReaderImpl
+   * @return {@link io.github.msdk.io.mzml.data.MzMLCVParam MzMLCVParam} object notation of the
+   *         &lt;code&gt;&amp;lt;cvParam&amp;gt;&lt;/code&gt; entered
+   */
+  private MzMLCVParam createMzMLCVParam(XMLStreamReader xmlStreamReader) {
+<span class="fc" id="L493">    CharArray accession = xmlStreamReader.getAttributeValue(null, MzMLTags.ATTR_ACCESSION);</span>
+<span class="fc" id="L494">    CharArray value = xmlStreamReader.getAttributeValue(null, MzMLTags.ATTR_VALUE);</span>
+<span class="fc" id="L495">    CharArray name = xmlStreamReader.getAttributeValue(null, MzMLTags.ATTR_NAME);</span>
+<span class="fc" id="L496">    CharArray unitAccession = xmlStreamReader.getAttributeValue(null, MzMLTags.ATTR_UNIT_ACCESSION);</span>
+
+    // accession is a required attribute
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">    if (accession == null) {</span>
+<span class="nc" id="L500">      throw new IllegalStateException(&quot;Any cvParam must have an accession.&quot;);</span>
+    }
+
+    // these attributes are optional
+<span class="fc bfc" id="L504" title="All 2 branches covered.">    String valueStr = value == null ? null : value.toString();</span>
+<span class="pc bpc" id="L505" title="1 of 2 branches missed.">    String nameStr = name == null ? null : name.toString();</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">    String unitAccessionStr = unitAccession == null ? null : unitAccession.toString();</span>
+
+<span class="fc" id="L508">    return new MzMLCVParam(accession.toString(), valueStr, nameStr, unitAccessionStr);</span>
+  }
+
+
+  /**
+   * &lt;p&gt;
+   * getScanNumber.
+   * &lt;/p&gt;
+   *
+   * @param spectrumId a {@link java.lang.String} object.
+   * @return a {@link java.lang.Integer} object.
+   */
+  public Optional&lt;Integer&gt; getScanNumber(String spectrumId) {
+<span class="fc" id="L521">    final Pattern pattern = Pattern.compile(&quot;scan=([0-9]+)&quot;);</span>
+<span class="fc" id="L522">    final Matcher matcher = pattern.matcher(spectrumId);</span>
+<span class="fc" id="L523">    boolean scanNumberFound = matcher.find();</span>
+
+    // Some vendors include scan=XX in the ID, some don't, such as
+    // mzML converted from WIFF files. See the definition of nativeID in
+    // http://psidev.cvs.sourceforge.net/viewvc/psidev/psi/psi-ms/mzML/controlledVocabulary/psi-ms.obo
+    // So, get the value of the index tag if the scanNumber is not present in the ID
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">    if (scanNumberFound) {</span>
+<span class="fc" id="L530">      Integer scanNumber = Integer.parseInt(matcher.group(1));</span>
+<span class="fc" id="L531">      return Optional.ofNullable(scanNumber);</span>
+    }
+
+<span class="nc" id="L534">    return Optional.ofNullable(null);</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Gets the required attribute from xmlStreamReader, throws an exception if the attribute is not
+   * found
+   * &lt;/p&gt;
+   *
+   * @param xmlStreamReader XMLStreamReader instance used to parse
+   * @param attr Attribute's value to be found
+   * @return a CharArray containing the value of the attribute.
+   */
+  public CharArray getRequiredAttribute(XMLStreamReader xmlStreamReader, String attr) {
+<span class="fc" id="L548">    CharArray attrValue = xmlStreamReader.getAttributeValue(null, attr);</span>
+<span class="pc bpc" id="L549" title="1 of 2 branches missed.">    if (attrValue == null)</span>
+<span class="nc" id="L550">      throw new IllegalStateException(&quot;Tag &quot; + xmlStreamReader.getLocalName() + &quot; must provide an `&quot;</span>
+<span class="nc" id="L551">          + attr + &quot;`attribute (Line &quot; + xmlStreamReader.getLocation().getLineNumber() + &quot;)&quot;);</span>
+<span class="fc" id="L552">    return attrValue;</span>
+  }
+
+  /**
+   * &lt;p&gt;manageCompression.&lt;/p&gt;
+   *
+   * @param binaryInfo a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   * @param accession a {@link java.lang.String} object.
+   */
+  public void manageCompression(MzMLBinaryDataInfo binaryInfo, String accession) {
+<span class="fc bfc" id="L562" title="All 2 branches covered.">    if (binaryInfo.getCompressionType() == MzMLCompressionType.NO_COMPRESSION)</span>
+<span class="fc" id="L563">      binaryInfo.setCompressionType(accession);</span>
+    else {
+<span class="pc bpc" id="L565" title="1 of 2 branches missed.">      if (binaryInfo.getCompressionType(accession) == MzMLCompressionType.ZLIB) {</span>
+<span class="nc bnc" id="L566" title="All 4 branches missed.">        switch (binaryInfo.getCompressionType()) {</span>
+          case NUMPRESS_LINPRED:
+<span class="nc" id="L568">            binaryInfo.setCompressionType(MzMLCompressionType.NUMPRESS_LINPRED_ZLIB);</span>
+<span class="nc" id="L569">            break;</span>
+          case NUMPRESS_POSINT:
+<span class="nc" id="L571">            binaryInfo.setCompressionType(MzMLCompressionType.NUMPRESS_POSINT_ZLIB);</span>
+<span class="nc" id="L572">            break;</span>
+          case NUMPRESS_SHLOGF:
+<span class="nc" id="L574">            binaryInfo.setCompressionType(MzMLCompressionType.NUMPRESS_SHLOGF_ZLIB);</span>
+<span class="nc" id="L575">            break;</span>
+          default:
+            break;
+        }
+<span class="nc" id="L579">      } else {</span>
+<span class="pc bpc" id="L580" title="3 of 4 branches missed.">        switch (binaryInfo.getCompressionType(accession)) {</span>
+          case NUMPRESS_LINPRED:
+<span class="fc" id="L582">            binaryInfo.setCompressionType(MzMLCompressionType.NUMPRESS_LINPRED_ZLIB);</span>
+<span class="fc" id="L583">            break;</span>
+          case NUMPRESS_POSINT:
+<span class="nc" id="L585">            binaryInfo.setCompressionType(MzMLCompressionType.NUMPRESS_POSINT_ZLIB);</span>
+<span class="nc" id="L586">            break;</span>
+          case NUMPRESS_SHLOGF:
+<span class="nc" id="L588">            binaryInfo.setCompressionType(MzMLCompressionType.NUMPRESS_SHLOGF_ZLIB);</span>
+<span class="nc" id="L589">            break;</span>
+          default:
+            break;
+        }
+      }
+    }
+<span class="fc" id="L595">  }</span>
+
+  /**
+   * &lt;p&gt;getMzMLRawFile.&lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLRawDataFile MzMLRawDataFile} containing the
+   *         parsed data
+   */
+  public MzMLRawDataFile getMzMLRawFile() {
+<span class="fc" id="L604">    return newRawFile;</span>
+  }
+
+  /**
+   * 
+   * Static class for holding temporary instances of variables initialized while parsing
+   */
+  private static class Vars {
+
+    int defaultArrayLength;
+    boolean skipBinaryDataArray;
+    MzMLMsScan spectrum;
+    MzMLChromatogram chromatogram;
+    MzMLBinaryDataInfo binaryDataInfo;
+    MzMLReferenceableParamGroup referenceableParamGroup;
+    MzMLPrecursorElement precursor;
+    MzMLProduct product;
+    MzMLIsolationWindow isolationWindow;
+    MzMLPrecursorSelectedIonList selectedIonList;
+    MzMLPrecursorSelectedIon selectedIon;
+    MzMLPrecursorActivation activation;
+    MzMLScan scan;
+    MzMLScanWindowList scanWindowList;
+    MzMLScanWindow scanWindow;
+    ArrayList&lt;MzMLReferenceableParamGroup&gt; referenceableParamGroupList;
+    List&lt;MsScan&gt; spectrumList;
+    List&lt;Chromatogram&gt; chromatogramsList;
+    List&lt;String&gt; msFunctionsList;
+
+<span class="fc" id="L633">    Vars() {</span>
+<span class="fc" id="L634">      defaultArrayLength = 0;</span>
+<span class="fc" id="L635">      skipBinaryDataArray = false;</span>
+<span class="fc" id="L636">      spectrum = null;</span>
+<span class="fc" id="L637">      chromatogram = null;</span>
+<span class="fc" id="L638">      binaryDataInfo = null;</span>
+<span class="fc" id="L639">      referenceableParamGroup = null;</span>
+<span class="fc" id="L640">      precursor = null;</span>
+<span class="fc" id="L641">      product = null;</span>
+<span class="fc" id="L642">      isolationWindow = null;</span>
+<span class="fc" id="L643">      selectedIonList = null;</span>
+<span class="fc" id="L644">      selectedIon = null;</span>
+<span class="fc" id="L645">      activation = null;</span>
+<span class="fc" id="L646">      scan = null;</span>
+<span class="fc" id="L647">      scanWindowList = null;</span>
+<span class="fc" id="L648">      scanWindow = null;</span>
+<span class="fc" id="L649">      referenceableParamGroupList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L650">      spectrumList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L651">      chromatogramsList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L652">      msFunctionsList = new ArrayList&lt;&gt;(); // TODO populate this list</span>
+<span class="fc" id="L653">    }</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</div></body></html>

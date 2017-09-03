@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzXMLParserTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzxml</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzxml</a> &gt; <span class="el_source">MzXMLParserTest.java</span></div><h1>MzXMLParserTest.java</h1><pre class="source lang-java linenums">package io.github.msdk.io.mzxml;
+
+import java.io.File;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.util.MsSpectrumUtil;
+
+<span class="fc" id="L19">public class MzXMLParserTest {</span>
+  private static final String TEST_DATA_PATH = &quot;src/test/resources/&quot;;
+
+  private Path getResourcePath(String resource) throws MSDKException {
+<span class="fc" id="L23">    final URL url = MzXMLParserTest.class.getClassLoader().getResource(resource);</span>
+    try {
+<span class="fc" id="L25">      return Paths.get(url.toURI()).toAbsolutePath();</span>
+<span class="nc" id="L26">    } catch (URISyntaxException e) {</span>
+<span class="nc" id="L27">      throw new MSDKException(e);</span>
+    }
+  }
+
+  @Test
+  public void testA10A2() throws MSDKException {
+
+    float intensityBuffer[];
+
+    // Import the file
+<span class="fc" id="L37">    String file = &quot;A1-0_A2.mzXML&quot;;</span>
+<span class="fc" id="L38">    File inputFile = getResourcePath(file).toFile();</span>
+<span class="fc" id="L39">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L40">    MzXMLFileParser parser = new MzXMLFileParser(inputFile);</span>
+<span class="fc" id="L41">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L42">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L43">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 1 scan
+<span class="fc" id="L46">    List&lt;MsScan&gt; scans = rawFile.getScans();</span>
+<span class="fc" id="L47">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L48">    Assert.assertEquals(1, scans.size());</span>
+
+    // 1st scan, #1
+<span class="fc" id="L51">    MsScan scan1 = scans.get(0);</span>
+<span class="fc" id="L52">    Assert.assertEquals(new Integer(1), scan1.getScanNumber());</span>
+<span class="fc" id="L53">    Assert.assertEquals(new Integer(1), scan1.getMsLevel());</span>
+<span class="fc" id="L54">    Assert.assertEquals(PolarityType.POSITIVE, scan1.getPolarity());</span>
+<span class="fc" id="L55">    scan1.getMzValues();</span>
+<span class="fc" id="L56">    intensityBuffer = scan1.getIntensityValues();</span>
+<span class="fc" id="L57">    Assert.assertEquals(22431, (int) scan1.getNumberOfDataPoints());</span>
+<span class="fc" id="L58">    Float scan1MaxInt =</span>
+<span class="fc" id="L59">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan1.getNumberOfDataPoints());</span>
+<span class="fc" id="L60">    Assert.assertEquals(3E4f, scan1MaxInt, 1E3f);</span>
+
+<span class="fc" id="L62">    rawFile.dispose();</span>
+
+<span class="fc" id="L64">  }</span>
+
+
+  @Test
+  public void testR1RG59B41() throws MSDKException {
+
+    float intensityBuffer[];
+
+    // Import the file
+<span class="fc" id="L73">    String file = &quot;R1_RG59_B4_1.mzXML&quot;;</span>
+<span class="fc" id="L74">    File inputFile = getResourcePath(file).toFile();</span>
+<span class="fc" id="L75">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L76">    MzXMLFileParser parser = new MzXMLFileParser(inputFile);</span>
+<span class="fc" id="L77">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L78">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L79">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 301 scans
+<span class="fc" id="L82">    List&lt;MsScan&gt; scans = rawFile.getScans();</span>
+<span class="fc" id="L83">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L84">    Assert.assertEquals(301, scans.size());</span>
+
+    // 1st scan, #1000
+<span class="fc" id="L87">    MsScan scan1 = scans.get(0);</span>
+<span class="fc" id="L88">    Assert.assertEquals(new Integer(1000), scan1.getScanNumber());</span>
+<span class="fc" id="L89">    Assert.assertEquals(new Integer(2), scan1.getMsLevel());</span>
+<span class="fc" id="L90">    Assert.assertEquals(1596.72f, scan1.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L91">    Assert.assertEquals(PolarityType.POSITIVE, scan1.getPolarity());</span>
+<span class="fc" id="L92">    scan1.getMzValues();</span>
+<span class="fc" id="L93">    intensityBuffer = scan1.getIntensityValues();</span>
+<span class="fc" id="L94">    Assert.assertEquals(210, (int) scan1.getNumberOfDataPoints());</span>
+<span class="fc" id="L95">    Float scan1MaxInt =</span>
+<span class="fc" id="L96">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan1.getNumberOfDataPoints());</span>
+<span class="fc" id="L97">    Assert.assertEquals(5.68E2f, scan1MaxInt, 1E1f);</span>
+
+    // 300th scan, #1299
+<span class="fc" id="L100">    MsScan scan299 = scans.get(299);</span>
+<span class="fc" id="L101">    Assert.assertEquals(new Integer(1299), scan299.getScanNumber());</span>
+<span class="fc" id="L102">    Assert.assertEquals(new Integer(1), scan299.getMsLevel());</span>
+<span class="fc" id="L103">    Assert.assertEquals(1765.578f, scan299.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L104">    Assert.assertEquals(PolarityType.POSITIVE, scan299.getPolarity());</span>
+<span class="fc" id="L105">    scan299.getMzValues();</span>
+<span class="fc" id="L106">    intensityBuffer = scan299.getIntensityValues();</span>
+<span class="fc" id="L107">    Assert.assertEquals(1069, (int) scan299.getNumberOfDataPoints());</span>
+<span class="fc" id="L108">    Float scan299MaxInt =</span>
+<span class="fc" id="L109">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan299.getNumberOfDataPoints());</span>
+<span class="fc" id="L110">    Assert.assertEquals(1.24E6f, scan299MaxInt, 1E5f);</span>
+
+<span class="fc" id="L112">    rawFile.dispose();</span>
+
+<span class="fc" id="L114">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

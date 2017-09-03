@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TmpFileDataStore.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.datastore</a> &gt; <span class="el_source">TmpFileDataStore.java</span></div><h1>TmpFileDataStore.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.datastore;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.channels.FileChannel;
+import java.util.HashMap;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.github.msdk.MSDKRuntimeException;
+
+/**
+ * A DataPointStore implementation that stores the data points in a temporary file. This is a simple
+ * and efficient method, but has one disadvantage - removing the data points is an expensive
+ * operation, so this implementation actually only removes the reference but the data still remain
+ * in the temporary file. If a single instance is continuously used to add and remove data points,
+ * the file will grow indefinitely.
+ * 
+ * Since this class stores data on disk, there is a risk that IOException may occur. If that
+ * happens, the IOException is wrapped in a MSDKRuntimeException and thrown.
+ * 
+ * The methods of this class are synchronized, therefore it can be safely used by multiple threads.
+ */
+class TmpFileDataStore implements DataPointStore {
+
+<span class="nc" id="L47">  private final Logger logger = LoggerFactory.getLogger(this.getClass());</span>
+
+  private final File tmpDataFileName;
+  private final RandomAccessFile tmpDataFile;
+
+  // Start with a ~20 KB byte buffer, that will be expanded based on needs
+<span class="nc" id="L53">  private ByteBuffer byteBuffer = ByteBuffer.allocate(20000);</span>
+
+<span class="nc" id="L55">  private final HashMap&lt;Integer, Long&gt; dataPointsOffsets = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L56">  private final HashMap&lt;Integer, Integer&gt; dataPointsLengths = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L58">  private int lastStorageId = 0;</span>
+
+<span class="nc" id="L60">  TmpFileDataStore() {</span>
+
+    try {
+<span class="nc" id="L63">      tmpDataFileName = File.createTempFile(&quot;msdk&quot;, &quot;.tmp&quot;);</span>
+
+<span class="nc" id="L65">      logger.debug(&quot;Initializing a new tmp-file data store in &quot; + tmpDataFileName);</span>
+
+<span class="nc" id="L67">      tmpDataFile = new RandomAccessFile(tmpDataFileName, &quot;rw&quot;);</span>
+
+      /*
+       * Lock the temporary file.
+       */
+<span class="nc" id="L72">      FileChannel fileChannel = tmpDataFile.getChannel();</span>
+<span class="nc" id="L73">      fileChannel.lock();</span>
+
+<span class="nc" id="L75">      tmpDataFileName.deleteOnExit();</span>
+
+<span class="nc" id="L77">    } catch (IOException e) {</span>
+<span class="nc" id="L78">      throw new MSDKRuntimeException(e);</span>
+    }
+
+<span class="nc" id="L81">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  synchronized public Object storeData(@Nonnull Object array, @Nonnull Integer size) {
+
+<span class="nc bnc" id="L88" title="All 2 branches missed.">    if (byteBuffer == null)</span>
+<span class="nc" id="L89">      throw new IllegalStateException(&quot;This object has been disposed&quot;);</span>
+
+    try {
+<span class="nc" id="L92">      final long currentOffset = tmpDataFile.length();</span>
+
+      int objectSize;
+<span class="nc bnc" id="L95" title="All 2 branches missed.">      if (array.getClass().getComponentType().equals(Double.TYPE))</span>
+<span class="nc" id="L96">        objectSize = Double.SIZE / 8;</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">      else if (array.getClass().getComponentType().equals(Float.TYPE))</span>
+<span class="nc" id="L98">        objectSize = Float.SIZE / 8;</span>
+      else
+<span class="nc" id="L100">        throw new IllegalArgumentException(&quot;Unsupported array type&quot;);</span>
+
+      // Calculate minimum necessary size of the byte buffer
+<span class="nc" id="L103">      final int numOfBytes = size * objectSize;</span>
+
+      // Make sure we have enough space in the byte buffer
+<span class="nc bnc" id="L106" title="All 2 branches missed.">      if (byteBuffer.capacity() &lt; numOfBytes) {</span>
+<span class="nc" id="L107">        byteBuffer = ByteBuffer.allocate(numOfBytes * 2);</span>
+<span class="nc" id="L108">      } else {</span>
+<span class="nc" id="L109">        byteBuffer.clear();</span>
+      }
+
+<span class="nc bnc" id="L112" title="All 2 branches missed.">      if (array.getClass().getComponentType().equals(Double.TYPE))</span>
+<span class="nc" id="L113">        convertArrayToByteBuffer((double[]) array, size);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">      else if (array.getClass().getComponentType().equals(Float.TYPE))</span>
+<span class="nc" id="L115">        convertArrayToByteBuffer((float[]) array, size);</span>
+
+<span class="nc" id="L117">      tmpDataFile.write(byteBuffer.array(), 0, numOfBytes);</span>
+
+      // Increase the storage ID
+<span class="nc" id="L120">      lastStorageId++;</span>
+
+      // Save the reference to the new items
+<span class="nc" id="L123">      dataPointsOffsets.put(lastStorageId, currentOffset);</span>
+<span class="nc" id="L124">      dataPointsLengths.put(lastStorageId, size);</span>
+
+<span class="nc" id="L126">    } catch (IOException e) {</span>
+<span class="nc" id="L127">      throw new MSDKRuntimeException(e);</span>
+    }
+
+<span class="nc" id="L130">    return lastStorageId;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  synchronized public void loadData(@Nonnull Object id, @Nonnull Object array) {
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">    if (byteBuffer == null)</span>
+<span class="nc" id="L138">      throw new IllegalStateException(&quot;This object has been disposed&quot;);</span>
+
+<span class="nc bnc" id="L140" title="All 2 branches missed.">    if (!dataPointsLengths.containsKey(id))</span>
+<span class="nc" id="L141">      throw new IllegalArgumentException(</span>
+<span class="nc" id="L142">          &quot;ID &quot; + id + &quot; not found in storage file &quot; + tmpDataFileName);</span>
+
+    // Get file offset and number of data points
+<span class="nc" id="L145">    final long offset = dataPointsOffsets.get(id);</span>
+<span class="nc" id="L146">    final int numOfDataPoints = dataPointsLengths.get(id);</span>
+
+<span class="nc bnc" id="L148" title="All 2 branches missed.">    if (!array.getClass().isArray())</span>
+<span class="nc" id="L149">      throw new IllegalArgumentException(&quot;The provided argument is not an array&quot;);</span>
+
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    if (Array.getLength(array) &lt; numOfDataPoints)</span>
+<span class="nc" id="L152">      throw new IllegalArgumentException(&quot;The provided array does not fit all loaded objects&quot;);</span>
+
+    int objectSize;
+<span class="nc bnc" id="L155" title="All 2 branches missed.">    if (array.getClass().getComponentType().equals(Double.TYPE))</span>
+<span class="nc" id="L156">      objectSize = Double.SIZE / 8;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">    else if (array.getClass().getComponentType().equals(Float.TYPE))</span>
+<span class="nc" id="L158">      objectSize = Float.SIZE / 8;</span>
+    else
+<span class="nc" id="L160">      throw new IllegalArgumentException(&quot;Unsupported array type&quot;);</span>
+
+    // Calculate minimum necessary size of the byte buffer
+<span class="nc" id="L163">    final int numOfBytes = numOfDataPoints * objectSize;</span>
+
+    // Make sure we have enough space in the byte buffer
+<span class="nc bnc" id="L166" title="All 2 branches missed.">    if (byteBuffer.capacity() &lt; numOfBytes) {</span>
+<span class="nc" id="L167">      byteBuffer = ByteBuffer.allocate(numOfBytes * 2);</span>
+<span class="nc" id="L168">    } else {</span>
+<span class="nc" id="L169">      byteBuffer.clear();</span>
+    }
+
+    try {
+
+      // Read values
+<span class="nc" id="L175">      tmpDataFile.seek(offset);</span>
+<span class="nc" id="L176">      tmpDataFile.read(byteBuffer.array(), 0, numOfBytes);</span>
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">      if (array.getClass().getComponentType().equals(Double.TYPE))</span>
+<span class="nc" id="L179">        convertByteBufferToArray((double[]) array, numOfDataPoints);</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">      else if (array.getClass().getComponentType().equals(Float.TYPE))</span>
+<span class="nc" id="L181">        convertByteBufferToArray((float[]) array, numOfDataPoints);</span>
+
+<span class="nc" id="L183">    } catch (IOException e) {</span>
+<span class="nc" id="L184">      throw new MSDKRuntimeException(e);</span>
+    }
+<span class="nc" id="L186">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  synchronized public void removeData(@Nonnull Object id) {
+
+<span class="nc bnc" id="L192" title="All 2 branches missed.">    if (byteBuffer == null)</span>
+<span class="nc" id="L193">      throw new IllegalStateException(&quot;This object has been disposed&quot;);</span>
+
+<span class="nc" id="L195">    dataPointsOffsets.remove(id);</span>
+<span class="nc" id="L196">    dataPointsLengths.remove(id);</span>
+
+<span class="nc" id="L198">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  synchronized public void dispose() {
+
+    // Discard the hash maps and byte buffer
+<span class="nc" id="L205">    dataPointsOffsets.clear();</span>
+<span class="nc" id="L206">    dataPointsLengths.clear();</span>
+<span class="nc" id="L207">    byteBuffer = null;</span>
+
+    // Remove the temporary file
+<span class="nc bnc" id="L210" title="All 2 branches missed.">    if (tmpDataFileName.exists()) {</span>
+<span class="nc" id="L211">      logger.debug(&quot;Removing tmp-file &quot; + tmpDataFileName);</span>
+
+      try {
+<span class="nc" id="L214">        tmpDataFile.close();</span>
+<span class="nc" id="L215">        tmpDataFileName.delete();</span>
+<span class="nc" id="L216">      } catch (IOException e) {</span>
+<span class="nc" id="L217">        logger.warn(</span>
+<span class="nc" id="L218">            &quot;Could not close and remove temporary file &quot; + tmpDataFileName + &quot;: &quot; + e.toString());</span>
+<span class="nc" id="L219">        e.printStackTrace();</span>
+      }
+    }
+<span class="nc" id="L222">  }</span>
+
+  /**
+   * {@inheritDoc}
+   *
+   * When this object is garbage collected, remove the associated temporary data file from disk.
+   */
+  @Override
+  protected void finalize() {
+<span class="nc" id="L231">    dispose();</span>
+<span class="nc" id="L232">  }</span>
+
+  private void convertArrayToByteBuffer(float[] data, int size) {
+<span class="nc" id="L235">    FloatBuffer fltBuffer = byteBuffer.asFloatBuffer();</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++)</span>
+<span class="nc" id="L237">      fltBuffer.put(data[i]);</span>
+<span class="nc" id="L238">  }</span>
+
+  private void convertArrayToByteBuffer(double[] data, int size) {
+<span class="nc" id="L241">    DoubleBuffer dblBuffer = byteBuffer.asDoubleBuffer();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++)</span>
+<span class="nc" id="L243">      dblBuffer.put(data[i]);</span>
+<span class="nc" id="L244">  }</span>
+
+  private void convertByteBufferToArray(float[] array, Integer size) {
+<span class="nc" id="L247">    FloatBuffer fltBuffer = byteBuffer.asFloatBuffer();</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L249">      array[i] = fltBuffer.get();</span>
+    }
+<span class="nc" id="L251">  }</span>
+
+  private void convertByteBufferToArray(double[] array, Integer size) {
+<span class="nc" id="L254">    DoubleBuffer dblBuffer = byteBuffer.asDoubleBuffer();</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L256">      array[i] = dblBuffer.get();</span>
+    }
+<span class="nc" id="L258">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</div></body></html>

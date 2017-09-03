@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzXMLFileImportMethod.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzxml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzxml</a> &gt; <span class="el_source">MzXMLFileImportMethod.java</span></div><h1>MzXMLFileImportMethod.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzxml;
+
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Optional;
+import java.util.logging.Logger;
+import java.util.zip.DataFormatException;
+
+import javax.annotation.Nonnull;
+import javax.xml.bind.DatatypeConverter;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.Duration;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import com.google.common.collect.Range;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.MSDKMethod;
+import io.github.msdk.datamodel.files.FileType;
+import io.github.msdk.datamodel.impl.SimpleIsolationInfo;
+import io.github.msdk.datamodel.impl.SimpleMsScan;
+import io.github.msdk.datamodel.impl.SimpleRawDataFile;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScanType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.spectra.spectrumtypedetection.SpectrumTypeDetectionAlgorithm;
+
+/**
+ * This class reads mzXML file format.
+ */
+public class MzXMLFileImportMethod implements MSDKMethod&lt;RawDataFile&gt; {
+
+<span class="nc" id="L56">  private Logger logger = Logger.getLogger(this.getClass().getName());</span>
+
+  private final @Nonnull File sourceFile;
+<span class="nc" id="L59">  private final @Nonnull FileType fileType = FileType.MZXML;</span>
+
+  private SimpleRawDataFile newRawDataFile;
+
+<span class="nc" id="L63">  private int totalScans = 0, parsedScans;</span>
+
+<span class="nc" id="L65">  private int peaksCount = 0;</span>
+<span class="nc" id="L66">  private boolean compressFlag = false;</span>
+
+<span class="nc" id="L68">  private final MzXMLHandler handler = new MzXMLHandler();</span>
+
+  private String precision;
+  private Integer precursorCharge;
+
+  // Buffers
+<span class="nc" id="L74">  private final StringBuilder charBuffer = new StringBuilder(1 &lt;&lt; 18);</span>
+<span class="nc" id="L75">  private double mzValues[] = new double[1000];</span>
+<span class="nc" id="L76">  private float intensityValues[] = new float[1000];</span>
+
+  // Retention time parser
+  private DatatypeFactory dataTypeFactory;
+
+<span class="nc" id="L81">  private boolean canceled = false;</span>
+
+  /*
+   * This variable hold the present scan or fragment, it is send to the stack when another
+   * scan/fragment appears as a parser.startElement
+   */
+  private SimpleMsScan buildingScan;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzXMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param sourceFile a {@link java.io.File} object.
+   */
+<span class="nc" id="L96">  public MzXMLFileImportMethod(@Nonnull File sourceFile) {</span>
+<span class="nc" id="L97">    this.sourceFile = sourceFile;</span>
+<span class="nc" id="L98">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public RawDataFile execute() throws MSDKException {
+
+    try {
+
+<span class="nc" id="L106">      logger.info(&quot;Started parsing file &quot; + sourceFile);</span>
+
+      // Create the XMLBasedRawDataFile object
+<span class="nc" id="L109">      newRawDataFile =</span>
+<span class="nc" id="L110">          new SimpleRawDataFile(sourceFile.getName(), Optional.of(sourceFile), fileType);</span>
+
+      // Use the default (non-validating) parser
+<span class="nc" id="L113">      SAXParserFactory factory = SAXParserFactory.newInstance();</span>
+<span class="nc" id="L114">      dataTypeFactory = DatatypeFactory.newInstance();</span>
+<span class="nc" id="L115">      SAXParser saxParser = factory.newSAXParser();</span>
+<span class="nc" id="L116">      saxParser.parse(sourceFile, handler);</span>
+
+<span class="nc" id="L118">      logger.info(&quot;Finished parsing &quot; + sourceFile + &quot;, parsed &quot; + parsedScans + &quot; scans&quot;);</span>
+
+<span class="nc" id="L120">      return newRawDataFile;</span>
+
+<span class="nc" id="L122">    } catch (Throwable e) {</span>
+
+      // We may already have set the status to CANCELED. In that case the
+      // caught exception simply indicates end of SAX parsing.
+<span class="nc bnc" id="L126" title="All 2 branches missed.">      if (canceled)</span>
+<span class="nc" id="L127">        return null;</span>
+      else
+<span class="nc" id="L129">        throw new MSDKException(e);</span>
+
+    }
+
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getFinishedPercentage() {
+<span class="nc bnc" id="L138" title="All 2 branches missed.">    return totalScans == 0 ? 0 : (float) parsedScans / totalScans;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public RawDataFile getResult() {
+<span class="nc" id="L144">    return newRawDataFile;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void cancel() {
+<span class="nc" id="L150">    this.canceled = true;</span>
+<span class="nc" id="L151">  }</span>
+
+<span class="nc" id="L153">  private class MzXMLHandler extends DefaultHandler {</span>
+
+    public void startElement(String namespaceURI, String lName, // local
+        // name
+        String qName, // qualified name
+        Attributes attrs) throws SAXException {
+
+<span class="nc bnc" id="L160" title="All 2 branches missed.">      if (canceled)</span>
+<span class="nc" id="L161">        throw new SAXException(&quot;Parsing Cancelled&quot;);</span>
+
+      // &lt;msRun&gt;
+<span class="nc bnc" id="L164" title="All 2 branches missed.">      if (qName.equals(&quot;msRun&quot;)) {</span>
+<span class="nc" id="L165">        String s = attrs.getValue(&quot;scanCount&quot;);</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        if (s != null)</span>
+<span class="nc" id="L167">          totalScans = Integer.parseInt(s);</span>
+      }
+
+      // &lt;scan&gt;
+<span class="nc bnc" id="L171" title="All 2 branches missed.">      if (qName.equalsIgnoreCase(&quot;scan&quot;)) {</span>
+
+        /*
+         * Only num, msLevel &amp; peaksCount values are required according with mzXML standard, the
+         * others are optional
+         */
+<span class="nc" id="L177">        int scanNumber = Integer.parseInt(attrs.getValue(&quot;num&quot;));</span>
+<span class="nc" id="L178">        int msLevel = Integer.parseInt(attrs.getValue(&quot;msLevel&quot;));</span>
+<span class="nc" id="L179">        peaksCount = Integer.parseInt(attrs.getValue(&quot;peaksCount&quot;));</span>
+
+        // MS function
+<span class="nc" id="L182">        String msFuncName = attrs.getValue(&quot;scanType&quot;);</span>
+<span class="nc" id="L183">        buildingScan = new SimpleMsScan(scanNumber);</span>
+<span class="nc" id="L184">        buildingScan.setRawDataFile(newRawDataFile);</span>
+<span class="nc" id="L185">        buildingScan.setMsLevel(msLevel);</span>
+<span class="nc" id="L186">        buildingScan.setMsFunction(msFuncName);</span>
+        // Scan type &amp; definition
+<span class="nc" id="L188">        buildingScan.setMsScanType(MsScanType.UNKNOWN);</span>
+<span class="nc" id="L189">        String filterLine = attrs.getValue(&quot;filterLine&quot;);</span>
+<span class="nc" id="L190">        buildingScan.setScanDefinition(filterLine);</span>
+
+        // Polarity
+        PolarityType polarity;
+<span class="nc" id="L194">        String polarityAttr = attrs.getValue(&quot;polarity&quot;);</span>
+<span class="nc bnc" id="L195" title="All 7 branches missed.">        switch (polarityAttr) {</span>
+          case &quot;+&quot;:
+<span class="nc" id="L197">            polarity = PolarityType.POSITIVE;</span>
+<span class="nc" id="L198">            break;</span>
+          case &quot;-&quot;:
+<span class="nc" id="L200">            polarity = PolarityType.NEGATIVE;</span>
+<span class="nc" id="L201">            break;</span>
+          default:
+<span class="nc" id="L203">            polarity = PolarityType.UNKNOWN;</span>
+            break;
+        }
+<span class="nc" id="L206">        buildingScan.setPolarity(polarity);</span>
+
+        // Parse retention time
+<span class="nc" id="L209">        String retentionTimeStr = attrs.getValue(&quot;retentionTime&quot;);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (retentionTimeStr != null) {</span>
+<span class="nc" id="L211">          Date currentDate = new Date();</span>
+<span class="nc" id="L212">          Duration dur = dataTypeFactory.newDuration(retentionTimeStr);</span>
+<span class="nc" id="L213">          final float rt = (float) (dur.getTimeInMillis(currentDate) / 1000.0);</span>
+<span class="nc" id="L214">          buildingScan.setRetentionTime(rt);</span>
+        }
+
+      }
+
+      // &lt;peaks&gt;
+<span class="nc bnc" id="L220" title="All 2 branches missed.">      if (qName.equalsIgnoreCase(&quot;peaks&quot;)) {</span>
+        // clean the current char buffer for the new element
+<span class="nc" id="L222">        charBuffer.setLength(0);</span>
+<span class="nc" id="L223">        compressFlag = false;</span>
+<span class="nc" id="L224">        String compressionType = attrs.getValue(&quot;compressionType&quot;);</span>
+<span class="nc bnc" id="L225" title="All 4 branches missed.">        if ((compressionType == null) || (compressionType.equals(&quot;none&quot;)))</span>
+<span class="nc" id="L226">          compressFlag = false;</span>
+        else
+<span class="nc" id="L228">          compressFlag = true;</span>
+<span class="nc" id="L229">        precision = attrs.getValue(&quot;precision&quot;);</span>
+
+      }
+
+      // &lt;precursorMz&gt;
+<span class="nc bnc" id="L234" title="All 2 branches missed.">      if (qName.equalsIgnoreCase(&quot;precursorMz&quot;)) {</span>
+        // clean the current char buffer for the new element
+<span class="nc" id="L236">        charBuffer.setLength(0);</span>
+<span class="nc" id="L237">        String precursorChargeAttr = attrs.getValue(&quot;precursorCharge&quot;);</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">        if (precursorChargeAttr != null)</span>
+<span class="nc" id="L239">          precursorCharge = Integer.parseInt(precursorChargeAttr);</span>
+      }
+
+<span class="nc" id="L242">    }</span>
+
+    /**
+     * endElement()
+     */
+    public void endElement(String namespaceURI, String sName, // simple name
+        String qName // qualified name
+    ) throws SAXException {
+
+      // &lt;/scan&gt;
+<span class="nc bnc" id="L252" title="All 2 branches missed.">      if (qName.equalsIgnoreCase(&quot;scan&quot;)) {</span>
+<span class="nc" id="L253">        newRawDataFile.addScan(buildingScan);</span>
+<span class="nc" id="L254">        parsedScans++;</span>
+<span class="nc" id="L255">        return;</span>
+      }
+
+      // &lt;precursorMz&gt;
+<span class="nc bnc" id="L259" title="All 2 branches missed.">      if (qName.equalsIgnoreCase(&quot;precursorMz&quot;)) {</span>
+<span class="nc" id="L260">        final String textContent = charBuffer.toString();</span>
+<span class="nc" id="L261">        double precursorMz = 0d;</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        if (!textContent.isEmpty())</span>
+<span class="nc" id="L263">          precursorMz = Double.parseDouble(textContent);</span>
+<span class="nc" id="L264">        IsolationInfo newIsolation = new SimpleIsolationInfo(Range.singleton(precursorMz), null,</span>
+<span class="nc" id="L265">            precursorMz, precursorCharge, null);</span>
+<span class="nc" id="L266">        buildingScan.getIsolations().add(newIsolation);</span>
+
+<span class="nc" id="L268">        return;</span>
+      }
+
+      // &lt;peaks&gt;
+<span class="nc bnc" id="L272" title="All 2 branches missed.">      if (qName.equalsIgnoreCase(&quot;peaks&quot;)) {</span>
+
+        // Base64 decoder
+<span class="nc" id="L275">        byte[] peakBytes = DatatypeConverter.parseBase64Binary(charBuffer.toString());</span>
+
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (compressFlag) {</span>
+          try {
+<span class="nc" id="L279">            peakBytes = ZlibCompressionUtil.decompress(peakBytes);</span>
+<span class="nc" id="L280">          } catch (DataFormatException e) {</span>
+<span class="nc" id="L281">            throw new SAXException(e);</span>
+          }
+        }
+
+        // make a data input stream
+<span class="nc" id="L286">        DataInputStream peakStream = new DataInputStream(new ByteArrayInputStream(peakBytes));</span>
+
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        if (peaksCount &gt; mzValues.length) {</span>
+<span class="nc" id="L289">          mzValues = new double[peaksCount];</span>
+<span class="nc" id="L290">          intensityValues = new float[peaksCount];</span>
+        }
+
+        try {
+<span class="nc bnc" id="L294" title="All 2 branches missed.">          for (int i = 0; i &lt; peaksCount; i++) {</span>
+
+            // Always respect this order pairOrder=&quot;m/z-int&quot;
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            if (&quot;64&quot;.equals(precision)) {</span>
+<span class="nc" id="L298">              mzValues[i] = peakStream.readDouble();</span>
+<span class="nc" id="L299">              intensityValues[i] = (float) peakStream.readDouble();</span>
+<span class="nc" id="L300">            } else {</span>
+<span class="nc" id="L301">              mzValues[i] = (double) peakStream.readFloat();</span>
+<span class="nc" id="L302">              intensityValues[i] = peakStream.readFloat();</span>
+            }
+
+          }
+<span class="nc" id="L306">        } catch (IOException eof) {</span>
+<span class="nc" id="L307">          throw new SAXException(eof);</span>
+        }
+        // Set the final data points to the scan
+<span class="nc" id="L310">        buildingScan.setDataPoints(mzValues, intensityValues, peaksCount);</span>
+
+        // Auto-detect whether this scan is centroided
+<span class="nc" id="L313">        MsSpectrumType spectrumType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(mzValues,</span>
+<span class="nc" id="L314">            intensityValues, peaksCount);</span>
+<span class="nc" id="L315">        buildingScan.setSpectrumType(spectrumType);</span>
+
+<span class="nc" id="L317">        return;</span>
+      }
+<span class="nc" id="L319">    }</span>
+
+    /**
+     * characters()
+     * 
+     * @see org.xml.sax.ContentHandler#characters(char[], int, int)
+     */
+    public void characters(char buf[], int offset, int len) throws SAXException {
+<span class="nc" id="L327">      charBuffer.append(buf, offset, len);</span>
+<span class="nc" id="L328">    }</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

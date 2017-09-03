@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DataPointSorter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.util</a> &gt; <span class="el_source">DataPointSorter.java</span></div><h1>DataPointSorter.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*</span>
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.util;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * &lt;p&gt;
+ * DataPointSorter class.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L27">public class DataPointSorter {</span>
+
+<span class="nc" id="L29">  public enum SortingProperty {</span>
+<span class="nc" id="L30">    MZ, INTENSITY</span>
+  }
+
+<span class="nc" id="L33">  public enum SortingDirection {</span>
+<span class="nc" id="L34">    ASCENDING, DESCENDING</span>
+  }
+
+  private static class DataPointComparator implements Comparator&lt;Integer&gt; {
+
+    private final double mzBuffer[];
+    private final float intensityBuffer[];
+    private final SortingProperty prop;
+    private final SortingDirection dir;
+
+<span class="nc" id="L44">    DataPointComparator(final double mzBuffer[], final float intensityBuffer[],</span>
+        SortingProperty prop, SortingDirection dir) {
+<span class="nc" id="L46">      this.mzBuffer = mzBuffer;</span>
+<span class="nc" id="L47">      this.intensityBuffer = intensityBuffer;</span>
+<span class="nc" id="L48">      this.prop = prop;</span>
+<span class="nc" id="L49">      this.dir = dir;</span>
+<span class="nc" id="L50">    }</span>
+
+    @Override
+    public int compare(Integer i1, Integer i2) {
+<span class="nc bnc" id="L54" title="All 3 branches missed.">      switch (prop) {</span>
+        case INTENSITY:
+<span class="nc bnc" id="L56" title="All 2 branches missed.">          if (dir == SortingDirection.ASCENDING)</span>
+<span class="nc" id="L57">            return Float.compare(intensityBuffer[i1], intensityBuffer[i2]);</span>
+          else
+<span class="nc" id="L59">            return Float.compare(intensityBuffer[i2], intensityBuffer[i1]);</span>
+        case MZ:
+<span class="nc bnc" id="L61" title="All 2 branches missed.">          if (dir == SortingDirection.ASCENDING)</span>
+<span class="nc" id="L62">            return Double.compare(mzBuffer[i1], mzBuffer[i2]);</span>
+          else
+<span class="nc" id="L64">            return Double.compare(mzBuffer[i2], mzBuffer[i1]);</span>
+      }
+<span class="nc" id="L66">      return 0;</span>
+    }
+
+  }
+
+  /**
+   * Sort the given data points by m/z order
+   *
+   * @param mzBuffer an array of double.
+   * @param intensityBuffer an array of float.
+   * @param size a int.
+   * @param prop a {@link io.github.msdk.util.DataPointSorter.SortingProperty} object.
+   * @param dir a {@link io.github.msdk.util.DataPointSorter.SortingDirection} object.
+   */
+  public static void sortDataPoints(final double mzBuffer[], final float intensityBuffer[],
+      final int size, SortingProperty prop, SortingDirection dir) {
+
+    // Use Collections.sort to obtain index mapping from old arrays to the
+    // new sorted array
+<span class="nc" id="L85">    final List&lt;Integer&gt; idx = new ArrayList&lt;&gt;(size);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++)</span>
+<span class="nc" id="L87">      idx.add(i);</span>
+<span class="nc" id="L88">    Comparator&lt;Integer&gt; comp = new DataPointComparator(mzBuffer, intensityBuffer, prop, dir);</span>
+
+<span class="nc" id="L90">    Collections.sort(idx, comp);</span>
+    // Remap the values according to the index map idx
+<span class="nc" id="L92">    remapArray(mzBuffer, idx);</span>
+<span class="nc" id="L93">    remapArray(intensityBuffer, idx);</span>
+
+<span class="nc" id="L95">  }</span>
+
+  private static void remapArray(Object array, List&lt;Integer&gt; indices) {
+
+    // Make a copy of indices, to prevent modifying the list
+<span class="nc" id="L100">    List&lt;Integer&gt; idx = new ArrayList&lt;&gt;(indices);</span>
+
+<span class="nc bnc" id="L102" title="All 2 branches missed.">    for (int i = 0; i &lt; idx.size(); i++) {</span>
+<span class="nc" id="L103">      final int newIndex = idx.get(i);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">      if (newIndex == i)</span>
+<span class="nc" id="L105">        continue;</span>
+
+<span class="nc" id="L107">      Object tmp = Array.get(array, i);</span>
+<span class="nc" id="L108">      Array.set(array, i, Array.get(array, newIndex));</span>
+
+<span class="nc" id="L110">      final int swapIndex = idx.indexOf(i);</span>
+<span class="nc" id="L111">      Array.set(array, newIndex, tmp);</span>
+<span class="nc" id="L112">      idx.set(swapIndex, newIndex);</span>
+<span class="nc" id="L113">      idx.set(i, i);</span>
+    }
+<span class="nc" id="L115">  }</span>
+
+  /**
+   * Sort the given data points by RT order
+   *
+   * @param rtBuffer an array
+   * @param mzBuffer an array of double.
+   * @param intensityBuffer an array of float.
+   * @param size a int.
+   */
+  public static void sortDataPoints(final Float rtBuffer[], final double mzBuffer[],
+      final float intensityBuffer[], final int size) {
+
+    // Use Collections.sort to obtain index mapping from old arrays to the
+    // new sorted array
+<span class="nc" id="L130">    final List&lt;Integer&gt; idx = new ArrayList&lt;&gt;(size);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++)</span>
+<span class="nc" id="L132">      idx.add(i);</span>
+<span class="nc" id="L133">    Collections.sort(idx, new Comparator&lt;Integer&gt;() {</span>
+      public int compare(Integer i1, Integer i2) {
+<span class="nc" id="L135">        return rtBuffer[i1].compareTo(rtBuffer[i2]);</span>
+      }
+    });
+
+    // Remap the values according to the index map idx
+<span class="nc" id="L140">    remapArray(rtBuffer, idx);</span>
+<span class="nc" id="L141">    remapArray(mzBuffer, idx);</span>
+<span class="nc" id="L142">    remapArray(intensityBuffer, idx);</span>
+
+<span class="nc" id="L144">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

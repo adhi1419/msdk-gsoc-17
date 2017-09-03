@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzXMLRawDataFile.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzxml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzxml</a> &gt; <span class="el_source">MzXMLRawDataFile.java</span></div><h1>MzXMLRawDataFile.java</h1><pre class="source lang-java linenums">package io.github.msdk.io.mzxml;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.files.FileType;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+
+/**
+ * &lt;p&gt;MzXMLRawDataFile class.&lt;/p&gt;
+ *
+ */
+public class MzXMLRawDataFile implements RawDataFile {
+
+<span class="fc" id="L24">  private static final @Nonnull FileType fileType = FileType.MZXML;</span>
+
+  private final @Nonnull File sourceFile;
+
+  private final @Nonnull List&lt;MsScan&gt; msScans;
+  private final @Nonnull List&lt;Chromatogram&gt; chromatograms;
+
+  private @Nonnull String name;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzXMLRawDataFile.
+   * &lt;/p&gt;
+   *
+   * @param sourceFile a {@link java.io.File} object.
+   */
+<span class="fc" id="L40">  public MzXMLRawDataFile(@Nonnull File sourceFile) {</span>
+<span class="fc" id="L41">    this.sourceFile = sourceFile;</span>
+<span class="fc" id="L42">    this.name = sourceFile.getName();</span>
+<span class="fc" id="L43">    this.msScans = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L44">    this.chromatograms = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L45">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public String getName() {
+<span class="nc" id="L51">    return name;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public Optional&lt;File&gt; getOriginalFile() {
+<span class="nc" id="L58">    return Optional.ofNullable(sourceFile);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public FileType getRawDataFileType() {
+<span class="nc" id="L65">    return fileType;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public @Nonnull List&lt;MsScan&gt; getScans() {
+<span class="fc" id="L71">    return ImmutableList.copyOf(msScans);</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param scan a {@link io.github.msdk.datamodel.rawdata.MsScan} object.
+   */
+  public void addScan(@Nonnull MsScan scan) {
+<span class="fc" id="L80">    Preconditions.checkNotNull(scan);</span>
+<span class="pc" id="L81">    synchronized (msScans) {</span>
+<span class="fc" id="L82">      msScans.add(scan);</span>
+    }
+<span class="fc" id="L84">  }</span>
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param scan a {@link io.github.msdk.datamodel.rawdata.MsScan} object.
+   */
+  public void removeScan(@Nonnull MsScan scan) {
+<span class="nc" id="L92">    Preconditions.checkNotNull(scan);</span>
+<span class="nc" id="L93">    synchronized (msScans) {</span>
+<span class="nc" id="L94">      msScans.remove(scan);</span>
+    }
+<span class="nc" id="L96">  }</span>
+
+  /** {@inheritDoc} */
+  @SuppressWarnings(&quot;null&quot;)
+  @Override
+  @Nonnull
+  public List&lt;Chromatogram&gt; getChromatograms() {
+<span class="nc" id="L103">    return ImmutableList.copyOf(chromatograms);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+<span class="fc" id="L108">  public void dispose() {}</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public List&lt;String&gt; getMsFunctions() {
+<span class="nc" id="L114">    ArrayList&lt;String&gt; msFunctionList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L115">    synchronized (msScans) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">      for (MsScan scan : msScans) {</span>
+<span class="nc" id="L117">        String f = scan.getMsFunction();</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">        if ((f != null) &amp;&amp; (!msFunctionList.contains(f)))</span>
+<span class="nc" id="L119">          msFunctionList.add(f);</span>
+      }
+    }
+<span class="nc" id="L122">    return msFunctionList;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

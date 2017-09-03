@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleFeature.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.impl</a> &gt; <span class="el_source">SimpleFeature.java</span></div><h1>SimpleFeature.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.impl;
+
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.features.Feature;
+import io.github.msdk.datamodel.ionannotations.IonAnnotation;
+import io.github.msdk.datamodel.rawdata.MsScan;
+
+/**
+ * Implementation of the Feature interface.
+ *
+ * @since 0.0.8
+ */
+<span class="nc" id="L31">public class SimpleFeature implements Feature {</span>
+
+  private @Nonnull Double mz;
+  private @Nonnull Float retentionTime;
+  private @Nullable Float area, height, snRatio, score;
+  private @Nullable Chromatogram chromatogram;
+  private @Nullable List&lt;MsScan&gt; msmsSpectra;
+  private @Nullable IonAnnotation ionAnnotation;
+
+  /** {@inheritDoc} */
+  @Override
+  public Double getMz() {
+<span class="nc" id="L43">    return mz;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getRetentionTime() {
+<span class="nc" id="L49">    return retentionTime;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getArea() {
+<span class="nc" id="L55">    return area;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getHeight() {
+<span class="nc" id="L61">    return height;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getSNRatio() {
+<span class="nc" id="L67">    return snRatio;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getScore() {
+<span class="nc" id="L73">    return score;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Chromatogram getChromatogram() {
+<span class="nc" id="L79">    return chromatogram;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public List&lt;MsScan&gt; getMSMSSpectra() {
+<span class="nc" id="L85">    return msmsSpectra;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public IonAnnotation getIonAnnotation() {
+<span class="nc" id="L91">    return ionAnnotation;</span>
+  }
+
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;mz&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param mz a {@link java.lang.Double} object.
+   */
+  public void setMz(Double mz) {
+<span class="nc" id="L101">    this.mz = mz;</span>
+<span class="nc" id="L102">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;retentionTime&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param retentionTime a {@link java.lang.Float} object.
+   */
+  public void setRetentionTime(Float retentionTime) {
+<span class="nc" id="L110">    this.retentionTime = retentionTime;</span>
+<span class="nc" id="L111">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;area&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param area a {@link java.lang.Float} object.
+   */
+  public void setArea(Float area) {
+<span class="nc" id="L119">    this.area = area;</span>
+<span class="nc" id="L120">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;height&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param height a {@link java.lang.Float} object.
+   */
+  public void setHeight(Float height) {
+<span class="nc" id="L128">    this.height = height;</span>
+<span class="nc" id="L129">  }</span>
+
+  /**
+   * &lt;p&gt;setSNRatio.&lt;/p&gt;
+   *
+   * @param snRatio a {@link java.lang.Float} object.
+   */
+  public void setSNRatio(Float snRatio) {
+<span class="nc" id="L137">    this.snRatio = snRatio;</span>
+<span class="nc" id="L138">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;score&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param score a {@link java.lang.Float} object.
+   */
+  public void setScore(Float score) {
+<span class="nc" id="L146">    this.score = score;</span>
+<span class="nc" id="L147">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;chromatogram&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param chromatogram a {@link io.github.msdk.datamodel.chromatograms.Chromatogram} object.
+   */
+  public void setChromatogram(Chromatogram chromatogram) {
+<span class="nc" id="L155">    this.chromatogram = chromatogram;</span>
+<span class="nc" id="L156">  }</span>
+
+  /**
+   * &lt;p&gt;setMSMSSpectra.&lt;/p&gt;
+   *
+   * @param msmsSpectra a {@link java.util.List} object.
+   */
+  public void setMSMSSpectra(List&lt;MsScan&gt; msmsSpectra) {
+<span class="nc" id="L164">    this.msmsSpectra = msmsSpectra;</span>
+<span class="nc" id="L165">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;ionAnnotation&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param ionAnnotation a {@link io.github.msdk.datamodel.ionannotations.IonAnnotation} object.
+   */
+  public void setIonAnnotation(IonAnnotation ionAnnotation) {
+<span class="nc" id="L173">    this.ionAnnotation = ionAnnotation;</span>
+<span class="nc" id="L174">  }</span>
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

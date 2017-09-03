@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ChromatogramType.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.chromatograms</a> &gt; <span class="el_source">ChromatogramType.java</span></div><h1>ChromatogramType.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*</span>
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.chromatograms;
+
+/**
+ * Represents the type of chromatogram.
+ */
+<span class="nc" id="L19">public enum ChromatogramType {</span>
+
+<span class="nc" id="L21">  /**</span>
+   * Total ion current (TIC) chromatogram. This is the summed intensity of all ions in each
+   * spectrum.
+   */
+<span class="nc" id="L25">  TIC,</span>
+
+<span class="nc" id="L27">  /**</span>
+   * Base peak chromatogram (BPC). This is the intensity of the most intense ion in each spectrum.
+   */
+<span class="nc" id="L30">  BPC,</span>
+
+<span class="nc" id="L32">  /**</span>
+   * Extracted-ion chromatogram (XIC). Also referred to as EIC or reconstructed-ion chromatogram
+   * (RIC). This is the intensity of one or more m/z values in each spectrum.
+   */
+<span class="nc" id="L36">  XIC,</span>
+
+<span class="nc" id="L38">  /**</span>
+   * Single ion current (SIC) chromatogram. Only a narrow range of m/z values are detected in the
+   * analysis and a chromatogram similar to the XIC is generated.
+   */
+<span class="nc" id="L42">  SIC,</span>
+
+<span class="nc" id="L44">  /**</span>
+   * Multiple Reaction Monitoring (MRM) or Selected Reaction Monitoring (SRM). A specific product
+   * ion of a specific parent ion is detected.
+   */
+<span class="nc" id="L48">  MRM_SRM,</span>
+
+<span class="nc" id="L50">  /**</span>
+   * Unknown chromatogram type.
+   */
+<span class="nc" id="L53">  UNKNOWN;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

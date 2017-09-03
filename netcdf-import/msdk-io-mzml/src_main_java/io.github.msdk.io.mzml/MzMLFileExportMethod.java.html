@@ -1,0 +1,773 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLFileExportMethod.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml</a> &gt; <span class="el_source">MzMLFileExportMethod.java</span></div><h1>MzMLFileExportMethod.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+
+import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.MSDKMethod;
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.io.mzml.data.MzMLArrayType;
+import io.github.msdk.io.mzml.data.MzMLBitLength;
+import io.github.msdk.io.mzml.data.MzMLCV;
+import io.github.msdk.io.mzml.data.MzMLCVGroup;
+import io.github.msdk.io.mzml.data.MzMLCVParam;
+import io.github.msdk.io.mzml.data.MzMLCompressionType;
+import io.github.msdk.io.mzml.data.MzMLMsScan;
+import io.github.msdk.io.mzml.data.MzMLPeaksEncoder;
+import io.github.msdk.io.mzml.data.MzMLPrecursorElement;
+import io.github.msdk.io.mzml.data.MzMLPrecursorSelectedIon;
+import io.github.msdk.io.mzml.data.MzMLProduct;
+import io.github.msdk.io.mzml.data.MzMLRawDataFile;
+import io.github.msdk.io.mzml.data.MzMLTags;
+import javolution.xml.internal.stream.XMLStreamWriterImpl;
+import javolution.xml.stream.XMLStreamException;
+
+/**
+ * &lt;p&gt;
+ * This class contains methods which can be used to write data contained in a
+ * {@link o.github.msdk.datamodel.rawdata.RawDataFile RawDataFile} to a file, in mzML format
+ * &lt;/p&gt;
+ */
+public class MzMLFileExportMethod implements MSDKMethod&lt;Void&gt; {
+
+  private static final String dataProcessingId = &quot;MSDK_mzml_export&quot;;
+  private static final String softwareId = &quot;MSDK&quot;;
+  private static final String XML_ENCODING = &quot;UTF-8&quot;;
+  private static final String XML_VERSION = &quot;1.0&quot;;
+  private static final String MZML_NAMESPACE = &quot;http://psi.hupo.org/ms/mzml&quot;;
+  private static final String XML_SCHEMA_INSTANCE = &quot;http://www.w3.org/2001/XMLSchema-instance&quot;;
+  private static final String XML_SCHEMA_LOCATION =
+      &quot;http://psi.hupo.org/ms/mzml http://psidev.info/files/ms/mzML/xsd/mzML1.1.0.xsd&quot;;
+  private static final String DEFAULT_VERSION = &quot;1.1.0&quot;;
+  private static final String CV_REF_MS = &quot;MS&quot;;
+
+  private static final String PREFIX_XSI = &quot;xsi&quot;;
+
+<span class="nc" id="L76">  private final Logger logger = LoggerFactory.getLogger(this.getClass());</span>
+
+  private final @Nonnull RawDataFile rawDataFile;
+  private final @Nonnull File target;
+  private final @Nonnull MzMLCompressionType doubleArrayCompression;
+  private final @Nonnull MzMLCompressionType floatArrayCompression;
+
+<span class="nc" id="L83">  private boolean canceled = false;</span>
+
+<span class="nc" id="L85">  private long totalScans = 0, totalChromatograms = 0, parsedScans, parsedChromatograms,</span>
+      indexListOffset;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileExportMethod.
+   * &lt;/p&gt;
+   *
+   * @param rawDataFile the input {@link o.github.msdk.datamodel.rawdata.RawDataFile RawDataFile}
+   *        which contains the data to be exported
+   * @param target the target {@link java.io.File File} to write the data, in mzML format
+   * @param doubleArrayCompression compression type for &lt;code&gt;double[]&lt;/code&gt; which are encoded
+   * @param floatArrayCompression compression type for &lt;code&gt;float[]&lt;/code&gt; which are encoded
+   */
+<span class="nc" id="L99">  public MzMLFileExportMethod(@Nonnull RawDataFile rawDataFile, @Nonnull File target,</span>
+      @Nonnull MzMLCompressionType doubleArrayCompression,
+      MzMLCompressionType floatArrayCompression) {
+<span class="nc" id="L102">    this.rawDataFile = rawDataFile;</span>
+<span class="nc" id="L103">    this.target = target;</span>
+<span class="nc" id="L104">    this.doubleArrayCompression = doubleArrayCompression;</span>
+<span class="nc" id="L105">    this.floatArrayCompression = floatArrayCompression;</span>
+<span class="nc" id="L106">  }</span>
+
+  /**
+   * {@inheritDoc}
+   *
+   * &lt;p&gt;
+   * Execute the process of writing the data from the the input
+   * {@link o.github.msdk.datamodel.rawdata.RawDataFile RawDataFile} to the target
+   * {@link java.io.File File}
+   * &lt;/p&gt;
+   */
+  @Override
+  public Void execute() throws MSDKException {
+
+<span class="nc" id="L120">    logger.info(&quot;Started export of &quot; + rawDataFile.getName() + &quot; to &quot; + target);</span>
+
+<span class="nc" id="L122">    List&lt;MsScan&gt; scans = rawDataFile.getScans();</span>
+<span class="nc" id="L123">    List&lt;Chromatogram&gt; chromatograms = rawDataFile.getChromatograms();</span>
+<span class="nc" id="L124">    totalScans = scans.size();</span>
+<span class="nc" id="L125">    totalChromatograms = chromatograms.size();</span>
+
+    // index offsets
+<span class="nc" id="L128">    List&lt;Long&gt; spectrumIndices = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L129">    List&lt;Long&gt; chromatogramIndices = new ArrayList&lt;&gt;();</span>
+
+    try {
+
+<span class="nc" id="L133">      FileOutputStream fos = new FileOutputStream(target);</span>
+<span class="nc" id="L134">      MessageDigest sha1 = MessageDigest.getInstance(&quot;SHA-1&quot;);</span>
+<span class="nc" id="L135">      DigestOutputStream dos = new DigestOutputStream(fos, sha1);</span>
+<span class="nc" id="L136">      dos.on(true);</span>
+<span class="nc" id="L137">      XMLStreamWriterImpl xmlStreamWriter = new XMLStreamWriterImpl();</span>
+<span class="nc" id="L138">      xmlStreamWriter.setOutput(dos);</span>
+
+      // Setting namespace and prefixes
+<span class="nc" id="L141">      xmlStreamWriter.setDefaultNamespace(MZML_NAMESPACE);</span>
+<span class="nc" id="L142">      xmlStreamWriter.setPrefix(PREFIX_XSI, XML_SCHEMA_INSTANCE);</span>
+
+      // &lt;?xml&gt;
+<span class="nc" id="L145">      xmlStreamWriter.writeStartDocument(XML_ENCODING, XML_VERSION);</span>
+
+      // &lt;indexedmzML&gt;
+<span class="nc" id="L148">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_INDEXED_MZML);</span>
+<span class="nc" id="L149">      xmlStreamWriter.writeDefaultNamespace(MZML_NAMESPACE);</span>
+<span class="nc" id="L150">      xmlStreamWriter.writeNamespace(PREFIX_XSI, XML_SCHEMA_INSTANCE);</span>
+<span class="nc" id="L151">      xmlStreamWriter.writeAttribute(XML_SCHEMA_INSTANCE, MzMLTags.ATTR_SCHEME_LOCATION,</span>
+<span class="nc" id="L152">          XML_SCHEMA_LOCATION);</span>
+
+      // &lt;mzML&gt;
+<span class="nc" id="L155">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_MZML);</span>
+<span class="nc" id="L156">      xmlStreamWriter.writeDefaultNamespace(MZML_NAMESPACE);</span>
+<span class="nc" id="L157">      xmlStreamWriter.writeNamespace(PREFIX_XSI, XML_SCHEMA_INSTANCE);</span>
+<span class="nc" id="L158">      xmlStreamWriter.writeAttribute(XML_SCHEMA_INSTANCE, MzMLTags.ATTR_SCHEME_LOCATION,</span>
+<span class="nc" id="L159">          XML_SCHEMA_LOCATION);</span>
+<span class="nc" id="L160">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ID, rawDataFile.getName());</span>
+<span class="nc" id="L161">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_VERSION, DEFAULT_VERSION);</span>
+
+      // &lt;cvList&gt;
+<span class="nc" id="L164">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_CV_LIST);</span>
+      // TODO: Hold cvList in the existing RawDataFile model
+<span class="nc" id="L166">      xmlStreamWriter.writeEndElement();</span>
+
+      // &lt;dataProcessingList&gt;
+<span class="nc" id="L169">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_DATA_PROCESSING_LIST);</span>
+<span class="nc" id="L170">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, &quot;1&quot;);</span>
+
+      // &lt;dataProcessing&gt;
+<span class="nc" id="L173">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_DATA_PROCESSING);</span>
+<span class="nc" id="L174">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ID, dataProcessingId);</span>
+
+      // &lt;processingMethod&gt;
+<span class="nc" id="L177">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_PROCESSING_METHOD);</span>
+<span class="nc" id="L178">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_SOFTWARE_REF, softwareId);</span>
+<span class="nc" id="L179">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ORDER, &quot;0&quot;);</span>
+
+      // Closing tags
+<span class="nc" id="L182">      xmlStreamWriter.writeEndElement(); // &lt;/processingMethod&gt;</span>
+<span class="nc" id="L183">      xmlStreamWriter.writeEndElement(); // &lt;/dataProcessing&gt;</span>
+<span class="nc" id="L184">      xmlStreamWriter.writeEndElement(); // &lt;/dataProcessingList&gt;</span>
+
+      // &lt;run&gt;
+<span class="nc" id="L187">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_RUN);</span>
+<span class="nc" id="L188">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ID, rawDataFile.getName());</span>
+
+      // &lt;spectrumList&gt;
+<span class="nc" id="L191">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_SPECTRUM_LIST);</span>
+<span class="nc" id="L192">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, String.valueOf(scans.size()));</span>
+
+<span class="nc" id="L194">      byte[] mzBuffer = null;</span>
+<span class="nc" id="L195">      byte[] intensityBuffer = null;</span>
+
+<span class="nc bnc" id="L197" title="All 2 branches missed.">      for (MsScan scan : scans) {</span>
+
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (canceled) {</span>
+<span class="nc" id="L200">          dos.close();</span>
+<span class="nc" id="L201">          fos.close();</span>
+<span class="nc" id="L202">          xmlStreamWriter.close();</span>
+<span class="nc" id="L203">          target.delete();</span>
+<span class="nc" id="L204">          return null;</span>
+        }
+
+        // &lt;spectrum&gt;
+<span class="nc" id="L208">        spectrumIndices.add(xmlStreamWriter.getLocation().getCharacterOffsetInLong());</span>
+<span class="nc" id="L209">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_SPECTRUM);</span>
+<span class="nc" id="L210">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_INDEX, String.valueOf(parsedScans));</span>
+<span class="nc" id="L211">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ID, &quot;scan=&quot; + scan.getScanNumber());</span>
+<span class="nc" id="L212">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_DEFAULT_ARRAY_LENGTH,</span>
+<span class="nc" id="L213">            String.valueOf(scan.getNumberOfDataPoints()));</span>
+
+<span class="nc" id="L215">        MzMLMsScan spectrum = null;</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (scan instanceof MzMLMsScan)</span>
+<span class="nc" id="L217">          spectrum = (MzMLMsScan) scan;</span>
+
+        // spectrum type CV param
+<span class="nc bnc" id="L220" title="All 4 branches missed.">        if (!(rawDataFile instanceof MzMLRawDataFile) || (rawDataFile instanceof MzMLRawDataFile</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            &amp;&amp; !spectrum.getCVValue(MzMLCV.cvCentroidSpectrum).isPresent()</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">            &amp;&amp; !spectrum.getCVValue(MzMLCV.cvProfileSpectrum).isPresent())) {</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">          if (scan.getSpectrumType() == MsSpectrumType.CENTROIDED)</span>
+<span class="nc" id="L224">            writeCVParam(xmlStreamWriter, MzMLCV.centroidCvParam);</span>
+          else
+<span class="nc" id="L226">            writeCVParam(xmlStreamWriter, MzMLCV.profileCvParam);</span>
+        }
+
+        // ms level CV param
+<span class="nc bnc" id="L230" title="All 4 branches missed.">        if (!(rawDataFile instanceof MzMLRawDataFile) || (rawDataFile instanceof MzMLRawDataFile</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            &amp;&amp; !spectrum.getCVValue(MzMLCV.cvMSLevel).isPresent())) {</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">          if (scan.getMsLevel() != null) {</span>
+<span class="nc" id="L233">            Integer msLevel = scan.getMsLevel();</span>
+<span class="nc" id="L234">            writeCVParam(xmlStreamWriter,</span>
+<span class="nc" id="L235">                new MzMLCVParam(MzMLCV.cvMSLevel, String.valueOf(msLevel), &quot;ms level&quot;, null));</span>
+          }
+        }
+
+        // total ion current CV param
+<span class="nc bnc" id="L240" title="All 4 branches missed.">        if (!(rawDataFile instanceof MzMLRawDataFile) || (rawDataFile instanceof MzMLRawDataFile</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            &amp;&amp; !spectrum.getCVValue(MzMLCV.cvTIC).isPresent())) {</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">          if (scan.getTIC() != null) {</span>
+<span class="nc" id="L243">            Float tic = scan.getTIC();</span>
+<span class="nc" id="L244">            writeCVParam(xmlStreamWriter,</span>
+<span class="nc" id="L245">                new MzMLCVParam(MzMLCV.cvTIC, String.valueOf(tic), &quot;total ion current&quot;, null));</span>
+          }
+        }
+
+        // m/z range CV param
+<span class="nc bnc" id="L250" title="All 4 branches missed.">        if (!(rawDataFile instanceof MzMLRawDataFile) || (rawDataFile instanceof MzMLRawDataFile</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            &amp;&amp; !spectrum.getCVValue(MzMLCV.cvLowestMz).isPresent()</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">            || !spectrum.getCVValue(MzMLCV.cvHighestMz).isPresent())) {</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">          if (scan.getMzRange() != null) {</span>
+<span class="nc" id="L254">            Double lowestMz = scan.getMzRange().lowerEndpoint();</span>
+<span class="nc" id="L255">            Double highestMz = scan.getMzRange().upperEndpoint();</span>
+<span class="nc" id="L256">            writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvLowestMz,</span>
+<span class="nc" id="L257">                String.valueOf(lowestMz), &quot;lowest observed m/z&quot;, MzMLCV.cvMz));</span>
+<span class="nc" id="L258">            writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvHighestMz,</span>
+<span class="nc" id="L259">                String.valueOf(highestMz), &quot;highest observed m/z&quot;, MzMLCV.cvMz));</span>
+          }
+        }
+
+        // Write the missing CV params parsed
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (rawDataFile instanceof MzMLRawDataFile)</span>
+<span class="nc" id="L265">          writeCVGroup(xmlStreamWriter, spectrum.getCVParams());</span>
+
+        // &lt;scanList&gt;
+<span class="nc" id="L268">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_SCAN_LIST);</span>
+<span class="nc" id="L269">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, &quot;1&quot;);</span>
+
+        // &lt;scan&gt;
+<span class="nc" id="L272">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_SCAN);</span>
+
+        // scan definition CV param
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        if (scan.getScanDefinition() != null) {</span>
+<span class="nc" id="L276">          String scanDefinition = scan.getScanDefinition();</span>
+<span class="nc" id="L277">          writeCVParam(xmlStreamWriter,</span>
+<span class="nc" id="L278">              new MzMLCVParam(MzMLCV.cvScanFilterString, scanDefinition, &quot;filter string&quot;, null));</span>
+        }
+
+        // retention time CV param
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (scan.getRetentionTime() != null) {</span>
+<span class="nc" id="L283">          Float rt = scan.getRetentionTime();</span>
+<span class="nc" id="L284">          writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.MS_RT_SCAN_START, String.valueOf(rt),</span>
+<span class="nc" id="L285">              &quot;scan time&quot;, MzMLCV.cvUnitsSec));</span>
+        }
+
+        // scan polarity CV param
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        if (scan.getPolarity() == PolarityType.POSITIVE)</span>
+<span class="nc" id="L290">          writeCVParam(xmlStreamWriter, MzMLCV.polarityPositiveCvParam);</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        else if (scan.getPolarity() == PolarityType.NEGATIVE)</span>
+<span class="nc" id="L292">          writeCVParam(xmlStreamWriter, MzMLCV.polarityNegativeCvParam);</span>
+
+        // &lt;scanWindowList&gt;
+<span class="nc" id="L295">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_SCAN_WINDOW_LIST);</span>
+<span class="nc" id="L296">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, &quot;1&quot;);</span>
+
+        // &lt;scanWindow&gt;
+<span class="nc" id="L299">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_SCAN_WINDOW);</span>
+
+        // scan window range CV param
+<span class="nc bnc" id="L302" title="All 2 branches missed.">        if (scan.getScanningRange() != null) {</span>
+<span class="nc" id="L303">          Double lowerLimit = scan.getScanningRange().lowerEndpoint();</span>
+<span class="nc" id="L304">          Double upperLimit = scan.getScanningRange().upperEndpoint();</span>
+<span class="nc" id="L305">          writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvScanWindowLowerLimit,</span>
+<span class="nc" id="L306">              String.valueOf(lowerLimit), &quot;scan window lower limit&quot;, MzMLCV.cvMz));</span>
+<span class="nc" id="L307">          writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvScanWindowUpperLimit,</span>
+<span class="nc" id="L308">              String.valueOf(upperLimit), &quot;scan window upper limit&quot;, MzMLCV.cvMz));</span>
+        }
+
+        // Closing tags
+<span class="nc" id="L312">        xmlStreamWriter.writeEndElement(); // &lt;/scanWindow&gt;</span>
+<span class="nc" id="L313">        xmlStreamWriter.writeEndElement(); // &lt;/scanWindowList&gt;</span>
+<span class="nc" id="L314">        xmlStreamWriter.writeEndElement(); // &lt;/scan&gt;</span>
+<span class="nc" id="L315">        xmlStreamWriter.writeEndElement(); // &lt;/scanList&gt;</span>
+
+<span class="nc bnc" id="L317" title="All 2 branches missed.">        if (rawDataFile instanceof MzMLRawDataFile</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">            &amp;&amp; spectrum.getPrecursorList().getPrecursorElements().size() &gt; 0) {</span>
+
+          // &lt;precursorList&gt;
+<span class="nc" id="L321">          xmlStreamWriter.writeStartElement(MzMLTags.TAG_PRECURSOR_LIST);</span>
+<span class="nc" id="L322">          xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT,</span>
+<span class="nc" id="L323">              String.valueOf(spectrum.getPrecursorList().getPrecursorElements().size()));</span>
+
+<span class="nc bnc" id="L325" title="All 2 branches missed.">          for (MzMLPrecursorElement precursor : spectrum.getPrecursorList()</span>
+<span class="nc" id="L326">              .getPrecursorElements()) {</span>
+
+            // &lt;precursor&gt;
+<span class="nc" id="L329">            xmlStreamWriter.writeStartElement(MzMLTags.TAG_PRECURSOR);</span>
+<span class="nc" id="L330">            xmlStreamWriter.writeAttribute(MzMLTags.ATTR_SPECTRUM_REF,</span>
+<span class="nc" id="L331">                precursor.getSpectrumRef().orElse(&quot;&quot;));</span>
+
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            if (precursor.getSelectedIonList().isPresent()) {</span>
+
+              // &lt;slectedIonList&gt;
+<span class="nc" id="L336">              xmlStreamWriter.writeStartElement(MzMLTags.TAG_SELECTED_ION_LIST);</span>
+<span class="nc" id="L337">              xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT,</span>
+<span class="nc" id="L338">                  String.valueOf(precursor.getSelectedIonList().get().getSelectedIonList().size()));</span>
+
+<span class="nc bnc" id="L340" title="All 2 branches missed.">              for (MzMLPrecursorSelectedIon selectedIon : precursor.getSelectedIonList().get()</span>
+<span class="nc" id="L341">                  .getSelectedIonList()) {</span>
+
+                // &lt;selectedIon&gt;
+<span class="nc" id="L344">                xmlStreamWriter.writeStartElement(MzMLTags.TAG_SELECTED_ION);</span>
+<span class="nc" id="L345">                writeCVGroup(xmlStreamWriter, selectedIon);</span>
+<span class="nc" id="L346">                xmlStreamWriter.writeEndElement(); // &lt;/selectedIon&gt;</span>
+              }
+<span class="nc" id="L348">              xmlStreamWriter.writeEndElement(); // &lt;/selectedIonList&gt;</span>
+
+            }
+<span class="nc" id="L351">            xmlStreamWriter.writeEndElement(); // &lt;/precursor&gt;</span>
+
+<span class="nc bnc" id="L353" title="All 2 branches missed.">            if (precursor.getIsolationWindow().isPresent()) {</span>
+
+              // &lt;isolationWindow&gt;
+<span class="nc" id="L356">              xmlStreamWriter.writeStartElement(MzMLTags.TAG_ISOLATION_WINDOW);</span>
+<span class="nc" id="L357">              writeCVGroup(xmlStreamWriter, precursor.getIsolationWindow().get());</span>
+<span class="nc" id="L358">              xmlStreamWriter.writeEndElement(); // &lt;/isolationWindow&gt;</span>
+            }
+
+            // &lt;activation&gt;
+<span class="nc" id="L362">            xmlStreamWriter.writeStartElement(MzMLTags.TAG_ACTIVATION);</span>
+<span class="nc" id="L363">            writeCVGroup(xmlStreamWriter, precursor.getActivation());</span>
+<span class="nc" id="L364">            xmlStreamWriter.writeEndElement(); // &lt;/activation&gt;</span>
+
+          }
+
+<span class="nc" id="L368">          xmlStreamWriter.writeEndElement(); // &lt;/precursorList&gt;</span>
+
+<span class="nc bnc" id="L370" title="All 2 branches missed.">          if (!spectrum.getProductList().getProducts().isEmpty()) {</span>
+
+            // &lt;productList&gt;
+<span class="nc" id="L373">            xmlStreamWriter.writeStartElement(MzMLTags.TAG_PRODUCT_LIST);</span>
+<span class="nc" id="L374">            xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT,</span>
+<span class="nc" id="L375">                String.valueOf(spectrum.getProductList().getProducts().size()));</span>
+
+<span class="nc bnc" id="L377" title="All 2 branches missed.">            for (MzMLProduct product : spectrum.getProductList().getProducts()) {</span>
+              // &lt;product&gt;
+<span class="nc" id="L379">              xmlStreamWriter.writeStartElement(MzMLTags.TAG_PRODUCT);</span>
+
+              // &lt;isolationWindow&gt;
+<span class="nc" id="L382">              xmlStreamWriter.writeStartElement(MzMLTags.TAG_ISOLATION_WINDOW);</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">              if (product.getIsolationWindow().isPresent())</span>
+<span class="nc" id="L384">                writeCVGroup(xmlStreamWriter, product.getIsolationWindow().get());</span>
+<span class="nc" id="L385">              xmlStreamWriter.writeEndElement(); // &lt;/isolationWindow&gt;</span>
+
+<span class="nc" id="L387">              xmlStreamWriter.writeEndElement(); // &lt;/product&gt;</span>
+            }
+
+<span class="nc" id="L390">            xmlStreamWriter.writeEndElement(); // &lt;/productList&gt;</span>
+          }
+        }
+
+        // &lt;binaryDataArrayList&gt;
+<span class="nc" id="L395">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY_DATA_ARRAY_LIST);</span>
+<span class="nc" id="L396">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, &quot;2&quot;);</span>
+
+        // &lt;binaryDataArray&gt; (m/z)
+<span class="nc" id="L399">        mzBuffer = MzMLPeaksEncoder.encodeDouble(scan.getMzValues(), doubleArrayCompression);</span>
+<span class="nc" id="L400">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY_DATA_ARRAY);</span>
+<span class="nc" id="L401">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ENCODED_LENGTH,</span>
+<span class="nc" id="L402">            String.valueOf(mzBuffer.length));</span>
+
+        // data array precision CV param
+<span class="nc" id="L405">        writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLBitLength.SIXTY_FOUR_BIT_FLOAT.getValue(),</span>
+<span class="nc" id="L406">            &quot;&quot;, &quot;64-bit float&quot;, null));</span>
+
+        // data array compression CV param
+<span class="nc" id="L409">        writeCVParam(xmlStreamWriter, new MzMLCVParam(doubleArrayCompression.getAccession(), &quot;&quot;,</span>
+<span class="nc" id="L410">            doubleArrayCompression.getName(), null));</span>
+
+        // data array type CV param
+<span class="nc" id="L413">        writeCVParam(xmlStreamWriter,</span>
+<span class="nc" id="L414">            new MzMLCVParam(MzMLArrayType.MZ.getAccession(), &quot;&quot;, &quot;m/z array&quot;, MzMLCV.cvMz));</span>
+
+        // &lt;binary&gt;
+<span class="nc" id="L417">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY);</span>
+<span class="nc" id="L418">        xmlStreamWriter.writeCharacters(new String(mzBuffer));</span>
+
+        // Closing tags
+<span class="nc" id="L421">        xmlStreamWriter.writeEndElement(); // &lt;/binary&gt;</span>
+<span class="nc" id="L422">        xmlStreamWriter.writeEndElement(); // &lt;/binaryDataArray&gt;</span>
+
+        // &lt;binaryDataArray&gt; (intensity)
+<span class="nc" id="L425">        intensityBuffer =</span>
+<span class="nc" id="L426">            MzMLPeaksEncoder.encodeFloat(scan.getIntensityValues(), floatArrayCompression);</span>
+<span class="nc" id="L427">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY_DATA_ARRAY);</span>
+<span class="nc" id="L428">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ENCODED_LENGTH,</span>
+<span class="nc" id="L429">            String.valueOf(intensityBuffer.length));</span>
+
+        // data array precision CV param
+<span class="nc" id="L432">        writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLBitLength.THIRTY_TWO_BIT_FLOAT.getValue(),</span>
+<span class="nc" id="L433">            &quot;&quot;, &quot;32-bit float&quot;, null));</span>
+
+        // data array compression CV param
+<span class="nc" id="L436">        writeCVParam(xmlStreamWriter, new MzMLCVParam(floatArrayCompression.getAccession(), &quot;&quot;,</span>
+<span class="nc" id="L437">            floatArrayCompression.getName(), null));</span>
+
+        // data array type CV param
+<span class="nc" id="L440">        writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLArrayType.INTENSITY.getAccession(), &quot;&quot;,</span>
+<span class="nc" id="L441">            &quot;intensity array&quot;, MzMLCV.cvUnitsIntensity1));</span>
+
+        // &lt;binary&gt;
+<span class="nc" id="L444">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY);</span>
+<span class="nc" id="L445">        xmlStreamWriter.writeCharacters(new String(intensityBuffer));</span>
+
+        // Closing tags
+<span class="nc" id="L448">        xmlStreamWriter.writeEndElement(); // &lt;/binary&gt;</span>
+<span class="nc" id="L449">        xmlStreamWriter.writeEndElement(); // &lt;/binaryDataArray&gt;</span>
+<span class="nc" id="L450">        xmlStreamWriter.writeEndElement(); // &lt;/binaryDataArrayList</span>
+<span class="nc" id="L451">        xmlStreamWriter.writeEndElement(); // &lt;/spectrum&gt;</span>
+
+<span class="nc" id="L453">        parsedScans++;</span>
+
+      }
+
+<span class="nc" id="L457">      xmlStreamWriter.writeEndElement(); // &lt;/spectrumList&gt;</span>
+
+      // &lt;chromatogramList&gt;
+<span class="nc" id="L460">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_CHROMATOGRAM_LIST);</span>
+<span class="nc" id="L461">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, String.valueOf(chromatograms.size()));</span>
+
+<span class="nc" id="L463">      byte[] rtBuffer = null;</span>
+<span class="nc" id="L464">      byte[] intensityBuffer2 = null;</span>
+
+<span class="nc bnc" id="L466" title="All 2 branches missed.">      for (Chromatogram chromatogram : chromatograms) {</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">        if (canceled) {</span>
+<span class="nc" id="L468">          dos.close();</span>
+<span class="nc" id="L469">          fos.close();</span>
+<span class="nc" id="L470">          xmlStreamWriter.close();</span>
+<span class="nc" id="L471">          target.delete();</span>
+<span class="nc" id="L472">          return null;</span>
+        }
+
+        // &lt;chromatogram&gt;
+<span class="nc" id="L476">        chromatogramIndices.add(xmlStreamWriter.getLocation().getCharacterOffsetInLong());</span>
+<span class="nc" id="L477">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_CHROMATOGRAM);</span>
+<span class="nc" id="L478">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_INDEX, String.valueOf(parsedChromatograms));</span>
+<span class="nc" id="L479">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ID, chromatogram.getChromatogramType().name());</span>
+<span class="nc" id="L480">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_DEFAULT_ARRAY_LENGTH,</span>
+<span class="nc" id="L481">            String.valueOf(chromatogram.getNumberOfDataPoints()));</span>
+
+        // chromatogram type CV param
+<span class="nc bnc" id="L484" title="All 5 branches missed.">        switch (chromatogram.getChromatogramType()) {</span>
+          case BPC:
+<span class="nc" id="L486">            writeCVParam(xmlStreamWriter,</span>
+<span class="nc" id="L487">                new MzMLCVParam(MzMLCV.cvChromatogramBPC, &quot;&quot;, &quot;basepeak chromatogram&quot;, null));</span>
+<span class="nc" id="L488">            break;</span>
+          case MRM_SRM:
+<span class="nc" id="L490">            writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvChromatogramMRM_SRM, &quot;&quot;,</span>
+<span class="nc" id="L491">                &quot;selected reaction monitoring chromatogram&quot;, null));</span>
+<span class="nc" id="L492">            break;</span>
+          case SIC:
+<span class="nc" id="L494">            writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvChromatogramSIC, &quot;&quot;,</span>
+<span class="nc" id="L495">                &quot;selected ion current chromatogram&quot;, null));</span>
+<span class="nc" id="L496">            break;</span>
+          case TIC:
+<span class="nc" id="L498">            writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvChromatogramTIC, &quot;&quot;,</span>
+<span class="nc" id="L499">                &quot;total ion current chromatogram&quot;, null));</span>
+<span class="nc" id="L500">            break;</span>
+          default:
+            break;
+        }
+
+        // Isolation info
+<span class="nc bnc" id="L506" title="All 2 branches missed.">        if (!chromatogram.getIsolations().isEmpty()) {</span>
+<span class="nc" id="L507">          IsolationInfo isolationInfo = chromatogram.getIsolations().get(0);</span>
+
+          // &lt;precursor&gt;
+<span class="nc" id="L510">          xmlStreamWriter.writeStartElement(MzMLTags.TAG_PRECURSOR);</span>
+
+<span class="nc bnc" id="L512" title="All 2 branches missed.">          if (isolationInfo.getPrecursorMz() != null) {</span>
+            // &lt;isolationWindow&gt;
+<span class="nc" id="L514">            xmlStreamWriter.writeStartElement(MzMLTags.TAG_ISOLATION_WINDOW);</span>
+
+<span class="nc" id="L516">            Double mz = isolationInfo.getPrecursorMz();</span>
+<span class="nc" id="L517">            writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvIsolationWindowTarget,</span>
+<span class="nc" id="L518">                String.valueOf(mz), &quot;isolation window target m/z&quot;, MzMLCV.cvMz));</span>
+
+<span class="nc" id="L520">            xmlStreamWriter.writeEndElement(); // &lt;/isolationWindow&gt;</span>
+          }
+
+<span class="nc bnc" id="L523" title="All 2 branches missed.">          if (isolationInfo.getActivationInfo() != null) {</span>
+            // &lt;activation&gt;
+<span class="nc" id="L525">            xmlStreamWriter.writeStartElement(MzMLTags.TAG_ACTIVATION);</span>
+
+<span class="nc" id="L527">            ActivationInfo activationInfo = isolationInfo.getActivationInfo();</span>
+
+<span class="nc bnc" id="L529" title="All 2 branches missed.">            switch (activationInfo.getActivationType()) {</span>
+              case CID:
+<span class="nc" id="L531">                writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvActivationCID, &quot;&quot;,</span>
+<span class="nc" id="L532">                    &quot;collision-induced dissociation&quot;, null));</span>
+<span class="nc" id="L533">                break;</span>
+              default:
+                break;
+            }
+
+<span class="nc bnc" id="L538" title="All 2 branches missed.">            if (activationInfo.getActivationEnergy() != null)</span>
+<span class="nc" id="L539">              writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvActivationEnergy,</span>
+<span class="nc" id="L540">                  String.valueOf(activationInfo.getActivationEnergy()), &quot;collision energy&quot;, null));</span>
+
+<span class="nc" id="L542">            xmlStreamWriter.writeEndElement(); // &lt;/activation&gt;</span>
+          }
+
+<span class="nc" id="L545">          xmlStreamWriter.writeEndElement(); // &lt;/precursor&gt;</span>
+        }
+
+
+        // product m/z value CV param
+<span class="nc bnc" id="L550" title="All 2 branches missed.">        if (chromatogram.getMz() != null) {</span>
+          // &lt;product&gt;
+<span class="nc" id="L552">          xmlStreamWriter.writeStartElement(MzMLTags.TAG_PRODUCT);</span>
+
+          // &lt;isolationWindow&gt;
+<span class="nc" id="L555">          xmlStreamWriter.writeStartElement(MzMLTags.TAG_ISOLATION_WINDOW);</span>
+
+<span class="nc" id="L557">          Double mz = chromatogram.getMz();</span>
+<span class="nc" id="L558">          writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLCV.cvIsolationWindowTarget,</span>
+<span class="nc" id="L559">              String.valueOf(mz), &quot;isolation window target m/z&quot;, MzMLCV.cvMz));</span>
+
+          // Closing tags
+<span class="nc" id="L562">          xmlStreamWriter.writeEndElement(); // &lt;/isolationWindow&gt;</span>
+<span class="nc" id="L563">          xmlStreamWriter.writeEndElement(); // &lt;/product&gt;</span>
+        }
+
+        // &lt;binaryDataArrayList&gt;
+<span class="nc" id="L567">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY_DATA_ARRAY_LIST);</span>
+<span class="nc" id="L568">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, &quot;2&quot;);</span>
+
+        // &lt;binaryDataArray&gt; (time)
+<span class="nc" id="L571">        rtBuffer = MzMLPeaksEncoder.encodeFloat(chromatogram.getRetentionTimes(null),</span>
+<span class="nc" id="L572">            floatArrayCompression);</span>
+<span class="nc" id="L573">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY_DATA_ARRAY);</span>
+<span class="nc" id="L574">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ENCODED_LENGTH,</span>
+<span class="nc" id="L575">            String.valueOf(rtBuffer.length));</span>
+
+        // data array precision CV param
+<span class="nc" id="L578">        writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLBitLength.THIRTY_TWO_BIT_FLOAT.getValue(),</span>
+<span class="nc" id="L579">            &quot;&quot;, &quot;32-bit float&quot;, null));</span>
+
+        // data array compression CV param
+<span class="nc" id="L582">        writeCVParam(xmlStreamWriter, new MzMLCVParam(floatArrayCompression.getAccession(), &quot;&quot;,</span>
+<span class="nc" id="L583">            floatArrayCompression.getName(), null));</span>
+
+        // data array type CV param
+<span class="nc" id="L586">        writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLArrayType.TIME.getAccession(), &quot;&quot;,</span>
+<span class="nc" id="L587">            &quot;time array&quot;, MzMLCV.cvUnitsMin2));</span>
+
+        // &lt;binary&gt;
+<span class="nc" id="L590">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY);</span>
+<span class="nc" id="L591">        xmlStreamWriter.writeCharacters(new String(rtBuffer));</span>
+
+        // Closing tags
+<span class="nc" id="L594">        xmlStreamWriter.writeEndElement(); // &lt;/binary&gt;</span>
+<span class="nc" id="L595">        xmlStreamWriter.writeEndElement(); // &lt;/binaryDataArray&gt;</span>
+
+        // &lt;binaryDataArray&gt; (intensity)
+<span class="nc" id="L598">        intensityBuffer2 =</span>
+<span class="nc" id="L599">            MzMLPeaksEncoder.encodeFloat(chromatogram.getIntensityValues(), floatArrayCompression);</span>
+<span class="nc" id="L600">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY_DATA_ARRAY);</span>
+<span class="nc" id="L601">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ENCODED_LENGTH,</span>
+<span class="nc" id="L602">            String.valueOf(intensityBuffer2.length));</span>
+
+        // data array precision CV param
+<span class="nc" id="L605">        writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLBitLength.THIRTY_TWO_BIT_FLOAT.getValue(),</span>
+<span class="nc" id="L606">            &quot;&quot;, &quot;32-bit float&quot;, null));</span>
+
+        // data array compression CV param
+<span class="nc" id="L609">        writeCVParam(xmlStreamWriter, new MzMLCVParam(floatArrayCompression.getAccession(), &quot;&quot;,</span>
+<span class="nc" id="L610">            floatArrayCompression.getName(), null));</span>
+
+        // data array type CV param
+<span class="nc" id="L613">        writeCVParam(xmlStreamWriter, new MzMLCVParam(MzMLArrayType.INTENSITY.getAccession(), &quot;&quot;,</span>
+<span class="nc" id="L614">            &quot;intensity array&quot;, MzMLCV.cvUnitsIntensity1));</span>
+
+        // &lt;binary&gt;
+<span class="nc" id="L617">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_BINARY);</span>
+<span class="nc" id="L618">        xmlStreamWriter.writeCharacters(new String(intensityBuffer2));</span>
+
+        // Closing tags
+<span class="nc" id="L621">        xmlStreamWriter.writeEndElement(); // &lt;/binary&gt;</span>
+<span class="nc" id="L622">        xmlStreamWriter.writeEndElement(); // &lt;/binaryDataArray&gt;</span>
+<span class="nc" id="L623">        xmlStreamWriter.writeEndElement(); // &lt;/binaryDataArrayList</span>
+<span class="nc" id="L624">        xmlStreamWriter.writeEndElement(); // &lt;/chromatogram&gt;</span>
+
+<span class="nc" id="L626">        parsedChromatograms++;</span>
+      }
+
+      // Closing tags
+<span class="nc" id="L630">      xmlStreamWriter.writeEndElement(); // &lt;/chromatogramList&gt;</span>
+<span class="nc" id="L631">      xmlStreamWriter.writeEndElement(); // &lt;/run&gt;</span>
+<span class="nc" id="L632">      xmlStreamWriter.writeEndElement(); // &lt;/mzML&gt;</span>
+
+      // &lt;indexList&gt;
+<span class="nc" id="L635">      indexListOffset = xmlStreamWriter.getLocation().getCharacterOffsetInLong();</span>
+<span class="nc" id="L636">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_INDEX_LIST);</span>
+<span class="nc" id="L637">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_COUNT, &quot;2&quot;);</span>
+
+      // &lt;index&gt; (spectrum)
+<span class="nc" id="L640">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_INDEX);</span>
+<span class="nc" id="L641">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_NAME, MzMLTags.TAG_SPECTRUM);</span>
+
+<span class="nc bnc" id="L643" title="All 2 branches missed.">      for (int i = 0; i &lt; scans.size(); i++) {</span>
+        // offset
+<span class="nc" id="L645">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_OFFSET);</span>
+<span class="nc" id="L646">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ID_REF,</span>
+<span class="nc" id="L647">            &quot;scan=&quot; + scans.get(i).getScanNumber());</span>
+<span class="nc" id="L648">        xmlStreamWriter.writeCharacters(String.valueOf(spectrumIndices.get(i)));</span>
+<span class="nc" id="L649">        xmlStreamWriter.writeEndElement(); // &lt;/offset&gt;</span>
+      }
+
+<span class="nc" id="L652">      xmlStreamWriter.writeEndElement(); // &lt;/index&gt;</span>
+
+      // &lt;index&gt; (chromatogram)
+<span class="nc" id="L655">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_INDEX);</span>
+<span class="nc" id="L656">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_NAME, MzMLTags.TAG_CHROMATOGRAM);</span>
+
+<span class="nc bnc" id="L658" title="All 2 branches missed.">      for (int i = 0; i &lt; chromatograms.size(); i++) {</span>
+        // offset
+<span class="nc" id="L660">        xmlStreamWriter.writeStartElement(MzMLTags.TAG_OFFSET);</span>
+<span class="nc" id="L661">        xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ID_REF,</span>
+<span class="nc" id="L662">            chromatograms.get(i).getChromatogramType().name());</span>
+<span class="nc" id="L663">        xmlStreamWriter.writeCharacters(String.valueOf(chromatogramIndices.get(i)));</span>
+<span class="nc" id="L664">        xmlStreamWriter.writeEndElement(); // &lt;/offset&gt;</span>
+      }
+
+<span class="nc" id="L667">      xmlStreamWriter.writeEndElement(); // &lt;/index&gt;</span>
+<span class="nc" id="L668">      xmlStreamWriter.writeEndElement(); // &lt;/indexList&gt;</span>
+
+      // &lt;indexListOffset&gt;
+<span class="nc" id="L671">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_INDEX_LIST_OFFSET);</span>
+<span class="nc" id="L672">      xmlStreamWriter.writeCharacters(String.valueOf(indexListOffset));</span>
+<span class="nc" id="L673">      xmlStreamWriter.writeEndElement(); // &lt;/indexListOffset&gt;</span>
+
+      // &lt;fileChecksum&gt;
+<span class="nc" id="L676">      dos.on(false);</span>
+<span class="nc" id="L677">      String sha1Checksum = DigestUtils.shaHex(sha1.digest());</span>
+<span class="nc" id="L678">      xmlStreamWriter.writeStartElement(MzMLTags.TAG_FILE_CHECKSUM);</span>
+<span class="nc" id="L679">      xmlStreamWriter.writeCharacters(sha1Checksum);</span>
+<span class="nc" id="L680">      xmlStreamWriter.writeEndElement(); // &lt;/fileChecksum&gt;</span>
+
+<span class="nc" id="L682">      xmlStreamWriter.writeEndElement(); // &lt;/indexedmzML&gt;</span>
+
+      // Wrapping up
+<span class="nc" id="L685">      xmlStreamWriter.writeEndDocument();</span>
+<span class="nc" id="L686">      xmlStreamWriter.close();</span>
+
+<span class="nc" id="L688">    } catch (</span>
+
+<span class="nc" id="L690">    Exception e) {</span>
+<span class="nc" id="L691">      throw new MSDKException(e);</span>
+    }
+
+<span class="nc" id="L694">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getFinishedPercentage() {
+<span class="nc bnc" id="L700" title="All 2 branches missed.">    return (totalScans + totalChromatograms) == 0 ? null</span>
+<span class="nc" id="L701">        : (float) (parsedScans + parsedChromatograms) / (totalScans + totalChromatograms);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Void getResult() {
+<span class="nc" id="L707">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void cancel() {
+<span class="nc" id="L713">    this.canceled = true;</span>
+<span class="nc" id="L714">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Write a &lt;code&gt;&amp;lt;cvParam&amp;gt;&lt;/code&gt; to the &lt;code&gt;xmlStreamWriter&lt;/code&gt;
+   * &lt;/p&gt;
+   * 
+   * @param xmlStreamWriter an {@link javolution.xml.internal.stream.XMLStreamWriterImpl
+   *        XMLStreamWriterImpl} instance
+   * @param cvParam the CV Parameter to be written to the target {@link java.io.File File}
+   * @throws XMLStreamException
+   */
+  private void writeCVParam(XMLStreamWriterImpl xmlStreamWriter, MzMLCVParam cvParam)
+      throws XMLStreamException {
+
+    // &lt;cvParam&gt;
+<span class="nc" id="L730">    xmlStreamWriter.writeStartElement(MzMLTags.TAG_CV_PARAM);</span>
+
+    // cvRef=&quot;MS&quot;
+<span class="nc" id="L733">    xmlStreamWriter.writeAttribute(MzMLTags.ATTR_CV_REF, CV_REF_MS);</span>
+
+    // accession=&quot;...&quot;
+<span class="nc" id="L736">    xmlStreamWriter.writeAttribute(MzMLTags.ATTR_ACCESSION, cvParam.getAccession());</span>
+
+    // Get optional CV param attribute such as value, name and unitAccession and write if they are
+    // present
+<span class="nc" id="L740">    Optional&lt;String&gt; value = cvParam.getValue(), name = cvParam.getName(),</span>
+<span class="nc" id="L741">        unitAccession = cvParam.getUnitAccession();</span>
+
+<span class="nc bnc" id="L743" title="All 2 branches missed.">    if (name.isPresent())</span>
+<span class="nc" id="L744">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_NAME, name.get());</span>
+
+<span class="nc" id="L746">    xmlStreamWriter.writeAttribute(MzMLTags.ATTR_VALUE, value.orElse(&quot;&quot;));</span>
+
+<span class="nc bnc" id="L748" title="All 2 branches missed.">    if (unitAccession.isPresent())</span>
+<span class="nc" id="L749">      xmlStreamWriter.writeAttribute(MzMLTags.ATTR_UNIT_ACCESSION, unitAccession.get());</span>
+
+<span class="nc" id="L751">    xmlStreamWriter.writeEndElement(); // &lt;/cvParam&gt;</span>
+
+<span class="nc" id="L753">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Write a group (or list) of &lt;code&gt;&amp;lt;cvParam&amp;gt;&lt;/code&gt; to the &lt;code&gt;xmlStreamWriter&lt;/code&gt;
+   * &lt;/p&gt;
+   * 
+   * @param xmlStreamWriter an {@link javolution.xml.internal.stream.XMLStreamWriterImpl
+   *        XMLStreamWriterImpl} instance
+   * @param cvGroup the list (or group) of CV Parameters to be written to the target
+   *        {@link java.io.File File}
+   * @throws XMLStreamException
+   */
+  private void writeCVGroup(XMLStreamWriterImpl xmlStreamWriter, MzMLCVGroup cvGroup)
+      throws XMLStreamException {
+<span class="nc bnc" id="L768" title="All 2 branches missed.">    for (MzMLCVParam cvParam : cvGroup.getCVParamsList())</span>
+<span class="nc" id="L769">      writeCVParam(xmlStreamWriter, cvParam);</span>
+<span class="nc" id="L770">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLRawDataFile.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-spectra-spectrumtypedetection</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.spectra.spectrumtypedetection</a> &gt; <span class="el_source">MzMLRawDataFile.java</span></div><h1>MzMLRawDataFile.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.spectra.spectrumtypedetection;
+
+import java.io.File;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.collect.ImmutableList;
+
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.files.FileType;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import uk.ac.ebi.jmzml.xml.io.MzMLUnmarshaller;
+
+class MzMLRawDataFile implements RawDataFile {
+
+<span class="nc" id="L33">  private static final @Nonnull FileType fileType = FileType.MZML;</span>
+
+  private final @Nonnull File sourceFile;
+  private @Nullable MzMLUnmarshaller parser;
+
+  private final @Nonnull List&lt;MsScan&gt; msScans;
+  private final @Nonnull List&lt;Chromatogram&gt; chromatograms;
+
+  private @Nonnull String name;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLRawDataFile.
+   * &lt;/p&gt;
+   *
+   * @param sourceFile a {@link java.io.File} object.
+   * @param parser a {@link uk.ac.ebi.jmzml.xml.io.MzMLUnmarshaller} object.
+   * @param msFunctions a {@link java.util.List} object.
+   * @param msScans a {@link java.util.List} object.
+   * @param chromatograms a {@link java.util.List} object.
+   */
+
+<span class="nc" id="L55">  public MzMLRawDataFile(@Nonnull File sourceFile, @Nonnull MzMLUnmarshaller parser,</span>
+      List&lt;MsScan&gt; msScans, List&lt;Chromatogram&gt; chromatograms) {
+<span class="nc" id="L57">    this.sourceFile = sourceFile;</span>
+<span class="nc" id="L58">    this.parser = parser;</span>
+<span class="nc" id="L59">    this.name = sourceFile.getName();</span>
+<span class="nc" id="L60">    this.msScans = msScans;</span>
+<span class="nc" id="L61">    this.chromatograms = chromatograms;</span>
+<span class="nc" id="L62">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public String getName() {
+<span class="nc" id="L68">    return name;</span>
+  }
+
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public Optional&lt;File&gt; getOriginalFile() {
+<span class="nc" id="L76">    return Optional.ofNullable(sourceFile);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public FileType getRawDataFileType() {
+<span class="nc" id="L83">    return fileType;</span>
+  }
+
+  /** {@inheritDoc} */
+
+  @Override
+  @Nonnull
+  public List&lt;String&gt; getMsFunctions() {
+<span class="nc" id="L91">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+
+  @Override
+  @Nonnull
+  public List&lt;MsScan&gt; getScans() {
+<span class="nc" id="L99">    return ImmutableList.copyOf(msScans);</span>
+  }
+
+  /** {@inheritDoc} */
+
+  @Override
+  @Nonnull
+  public List&lt;Chromatogram&gt; getChromatograms() {
+<span class="nc" id="L107">    return ImmutableList.copyOf(chromatograms);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void dispose() {
+<span class="nc" id="L113">    parser = null;</span>
+<span class="nc" id="L114">  }</span>
+
+  @Nullable
+  MzMLUnmarshaller getParser() {
+<span class="nc" id="L118">    return parser;</span>
+  }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</div></body></html>

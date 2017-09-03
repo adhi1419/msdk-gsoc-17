@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IonTypeUtil.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.util</a> &gt; <span class="el_source">IonTypeUtil.java</span></div><h1>IonTypeUtil.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.util;
+
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.Nonnull;
+
+import com.google.common.base.Strings;
+
+import io.github.msdk.MSDKRuntimeException;
+import io.github.msdk.datamodel.impl.SimpleIonType;
+import io.github.msdk.datamodel.ionannotations.IonType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+
+/**
+ * IonType utilities
+ */
+<span class="nc" id="L33">public class IonTypeUtil {</span>
+
+<span class="nc" id="L35">  private static final Pattern ionTypePattern =</span>
+<span class="nc" id="L36">      Pattern.compile(&quot;\\[(\\d*)M([+-]?.*)\\](\\d*)([+-])&quot;);</span>
+
+<span class="nc" id="L38">  private static final Pattern adductPattern = Pattern.compile(&quot;([+-])(\\d*)([\\w]+)&quot;);</span>
+
+<span class="nc" id="L40">  private static final Pattern elementPattern = Pattern.compile(&quot;([A-Z][a-z]*)(\\d*)&quot;);</span>
+
+  /**
+   * Creates an IonType from a string. The expected string format is [M+2H]2+.
+   *
+   * @return a {@link io.github.msdk.datamodel.ionannotations.IonType} object.
+   * @param adduct a {@link java.lang.String} object.
+   */
+  public static @Nonnull IonType createIonType(final @Nonnull String adduct) {
+
+<span class="nc" id="L50">    Matcher m = ionTypePattern.matcher(adduct);</span>
+
+<span class="nc bnc" id="L52" title="All 2 branches missed.">    if (!m.matches())</span>
+<span class="nc" id="L53">      throw new MSDKRuntimeException(&quot;Cannot parse ion type &quot; + adduct);</span>
+
+<span class="nc" id="L55">    final String numOfMoleculesGroup = m.group(1);</span>
+<span class="nc" id="L56">    final String adductFormulaGroup = m.group(2);</span>
+<span class="nc" id="L57">    final String chargeGroup = m.group(3);</span>
+<span class="nc" id="L58">    final String polarityGroup = m.group(4);</span>
+
+    try {
+
+      // Polarity type
+      PolarityType polarity;
+<span class="nc bnc" id="L64" title="All 7 branches missed.">      switch (polarityGroup) {</span>
+        case &quot;+&quot;:
+<span class="nc" id="L66">          polarity = PolarityType.POSITIVE;</span>
+<span class="nc" id="L67">          break;</span>
+        case &quot;-&quot;:
+<span class="nc" id="L69">          polarity = PolarityType.NEGATIVE;</span>
+<span class="nc" id="L70">          break;</span>
+        default:
+<span class="nc" id="L72">          polarity = PolarityType.UNKNOWN;</span>
+      }
+
+      // Number of molecules
+<span class="nc" id="L76">      Integer numberOfMolecules = 1;</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(numOfMoleculesGroup))</span>
+<span class="nc" id="L78">        numberOfMolecules = Integer.parseInt(numOfMoleculesGroup);</span>
+
+      // Charge
+<span class="nc" id="L81">      Integer charge = 1;</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(chargeGroup))</span>
+<span class="nc" id="L83">        charge = Integer.parseInt(chargeGroup);</span>
+
+      // Adduct formula
+<span class="nc" id="L86">      String adductFormula = parseAdductFormula(adductFormulaGroup);</span>
+
+      // Create ionType
+<span class="nc" id="L89">      IonType ionType =</span>
+<span class="nc" id="L90">           new SimpleIonType(adduct, polarity, numberOfMolecules, adductFormula, charge);</span>
+
+<span class="nc" id="L92">      return ionType;</span>
+
+<span class="nc" id="L94">    } catch (Exception e) {</span>
+<span class="nc" id="L95">      throw new MSDKRuntimeException(&quot;Cannot parse ion type &quot; + adduct);</span>
+    }
+
+  }
+
+  /**
+   * Parses a &quot;vague&quot; formula from ionization adduct definition (e.g., -H2O+NH4 coming from adduct
+   * type [2M-H2O+NH4]+) into a standard chemical formula. Note that the resulting formula may have
+   * negative element counts, in case the adduct represents a loss. In the above adduct case, the
+   * resulting formula would be H2NO-1
+   * 
+   * @param adductFormula Adduct formula in the form +XXX or -XXX or +XXX-YYY
+   * @return Chemical formula formatted according to the Hill System
+   */
+  private static String parseAdductFormula(String adductFormula) {
+
+<span class="nc" id="L111">    Hashtable&lt;String, Integer&gt; elementCounts = new Hashtable&lt;&gt;();</span>
+
+<span class="nc" id="L113">    Matcher m = adductPattern.matcher(adductFormula);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">    while (m.find()) {</span>
+<span class="nc" id="L115">      String plusMinus = m.group(1);</span>
+<span class="nc" id="L116">      Integer multiplier = 1;</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(m.group(2)))</span>
+<span class="nc" id="L118">        multiplier = Integer.parseInt(m.group(2));</span>
+<span class="nc" id="L119">      String formula = m.group(3);</span>
+<span class="nc" id="L120">      Matcher f = elementPattern.matcher(formula);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">      while (f.find()) {</span>
+<span class="nc" id="L122">        String element = f.group(1);</span>
+<span class="nc" id="L123">        Integer count = multiplier;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (!Strings.isNullOrEmpty(f.group(2)))</span>
+<span class="nc" id="L125">          count *= Integer.parseInt(f.group(2));</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (plusMinus.equals(&quot;-&quot;))</span>
+<span class="nc" id="L127">          count *= -1;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (elementCounts.containsKey(element))</span>
+<span class="nc" id="L129">          count += elementCounts.get(element);</span>
+<span class="nc" id="L130">        elementCounts.put(element, count);</span>
+      }
+    }
+    // Build the formula string according to Hill System rules
+<span class="nc" id="L134">    StringBuilder formula = new StringBuilder();</span>
+<span class="nc" id="L135">    Integer cCount = elementCounts.get(&quot;C&quot;);</span>
+<span class="nc bnc" id="L136" title="All 4 branches missed.">    if (cCount != null &amp;&amp; cCount != 0) {</span>
+<span class="nc" id="L137">      formula.append(&quot;C&quot;);</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">      if (cCount != 1)</span>
+<span class="nc" id="L139">        formula.append(cCount);</span>
+    }
+<span class="nc" id="L141">    elementCounts.remove(&quot;C&quot;);</span>
+<span class="nc" id="L142">    Integer hCount = elementCounts.get(&quot;H&quot;);</span>
+<span class="nc bnc" id="L143" title="All 4 branches missed.">    if (hCount != null &amp;&amp; hCount != 0) {</span>
+<span class="nc" id="L144">      formula.append(&quot;H&quot;);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">      if (hCount != 1)</span>
+<span class="nc" id="L146">        formula.append(hCount);</span>
+    }
+<span class="nc" id="L148">    elementCounts.remove(&quot;H&quot;);</span>
+<span class="nc" id="L149">    String elements[] = elementCounts.keySet().toArray(new String[0]);</span>
+<span class="nc" id="L150">    Arrays.sort(elements);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    for (String element : elements) {</span>
+<span class="nc" id="L152">      Integer count = elementCounts.get(element);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">      if (count != 0) {</span>
+<span class="nc" id="L154">        formula.append(element);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (count != 1)</span>
+<span class="nc" id="L156">          formula.append(count);</span>
+      }
+    }
+<span class="nc" id="L159">    return formula.toString();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</div></body></html>

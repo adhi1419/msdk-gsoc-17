@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLFileExportMethodTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml</a> &gt; <span class="el_source">MzMLFileExportMethodTest.java</span></div><h1>MzMLFileExportMethodTest.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.chromatograms.ChromatogramType;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.ActivationType;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.io.mzml.MzMLFileExportMethod;
+import io.github.msdk.io.mzml.MzMLFileImportMethod;
+import io.github.msdk.io.mzml.data.MzMLCompressionType;
+import io.github.msdk.io.mzml.data.MzMLMsScan;
+import io.github.msdk.util.MsSpectrumUtil;
+
+<span class="fc" id="L45">public class MzMLFileExportMethodTest {</span>
+
+  private Path getResourcePath(String resource) throws MSDKException {
+<span class="fc" id="L48">    final URL url = MzMLFileImportMethodTest.class.getClassLoader().getResource(resource);</span>
+    try {
+<span class="fc" id="L50">      return Paths.get(url.toURI()).toAbsolutePath();</span>
+<span class="nc" id="L51">    } catch (URISyntaxException e) {</span>
+<span class="nc" id="L52">      throw new MSDKException(e);</span>
+    }
+  }
+
+  @Test
+  public void test5peptideFT() throws MSDKException, IOException {
+
+    float intensityBuffer[];
+
+    // Set up Predicate&lt;MsScan&gt;
+<span class="fc" id="L62">    List&lt;Integer&gt; scansToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L63">    scansToParse.addAll(Arrays.asList(2, 5));</span>
+<span class="fc" id="L64">    Predicate&lt;MsScan&gt; msScanPredicate = getMsScanPredicate(scansToParse);</span>
+<span class="fc" id="L65">    List&lt;Integer&gt; chromatogramsToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L66">    Predicate&lt;Chromatogram&gt; chromatogramPredicate = getChromatogramPredicate(chromatogramsToParse);</span>
+
+    // Import the file
+<span class="fc" id="L69">    String file = &quot;5peptideFT.mzML&quot;;</span>
+<span class="fc" id="L70">    File inputFile = getResourcePath(file).toFile();</span>
+<span class="fc" id="L71">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L72">    MzMLFileImportMethod parser =</span>
+<span class="fc" id="L73">        new MzMLFileImportMethod(inputFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L74">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L75">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L76">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new mzML
+<span class="fc" id="L79">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.mzML&quot;);</span>
+<span class="fc" id="L80">    tempFile.deleteOnExit();</span>
+<span class="fc" id="L81">    MzMLFileExportMethod exporter = new MzMLFileExportMethod(rawFile, tempFile,</span>
+<span class="fc" id="L82">        MzMLCompressionType.NUMPRESS_LINPRED_ZLIB, MzMLCompressionType.ZLIB);</span>
+<span class="fc" id="L83">    exporter.execute();</span>
+<span class="fc" id="L84">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new mzML
+<span class="fc" id="L87">    parser = new MzMLFileImportMethod(tempFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L88">    RawDataFile newMzMLFile = parser.execute();</span>
+<span class="fc" id="L89">    Assert.assertNotNull(newMzMLFile);</span>
+<span class="fc" id="L90">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 7 scans, 2 pass the predicate
+<span class="fc" id="L93">    List&lt;MsScan&gt; scans = newMzMLFile.getScans();</span>
+<span class="fc" id="L94">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L95">    Assert.assertEquals(7, scans.size());</span>
+
+    // 2nd scan, #2
+<span class="fc" id="L98">    MsScan scan2 = scans.get(1);</span>
+<span class="fc" id="L99">    Assert.assertEquals(Integer.valueOf(2), scan2.getScanNumber());</span>
+<span class="fc" id="L100">    Assert.assertEquals(MsSpectrumType.PROFILE, scan2.getSpectrumType());</span>
+<span class="fc" id="L101">    Assert.assertEquals(Integer.valueOf(1), scan2.getMsLevel());</span>
+<span class="fc" id="L102">    Assert.assertEquals(0.474f, scan2.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L103">    Assert.assertEquals(PolarityType.POSITIVE, scan2.getPolarity());</span>
+<span class="fc" id="L104">    Assert.assertEquals(209.1818184554577, scan2.getMzValues()[100], 0.00001);</span>
+<span class="fc" id="L105">    scan2.getMzValues();</span>
+<span class="fc" id="L106">    intensityBuffer = scan2.getIntensityValues();</span>
+<span class="fc" id="L107">    Assert.assertEquals(19800, (int) scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L108">    Float scan2maxInt =</span>
+<span class="fc" id="L109">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L110">    Assert.assertEquals(1.8E5f, scan2maxInt, 1E4f);</span>
+
+    // 5th scan, #5
+<span class="fc" id="L113">    MsScan scan5 = scans.get(4);</span>
+<span class="fc" id="L114">    Assert.assertEquals(Integer.valueOf(5), scan5.getScanNumber());</span>
+<span class="fc" id="L115">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan5.getSpectrumType());</span>
+<span class="fc" id="L116">    Assert.assertEquals(Integer.valueOf(2), scan5.getMsLevel());</span>
+<span class="fc" id="L117">    Assert.assertEquals(2.094f, scan5.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L118">    Assert.assertEquals(PolarityType.POSITIVE, scan5.getPolarity());</span>
+<span class="fc" id="L119">    Assert.assertEquals(483.4679870605469, scan5.getMzValues()[200], 0.00001);</span>
+<span class="fc" id="L120">    intensityBuffer = scan5.getIntensityValues();</span>
+<span class="fc" id="L121">    Assert.assertEquals(837, (int) scan5.getNumberOfDataPoints());</span>
+<span class="fc" id="L122">    Float scan5maxInt =</span>
+<span class="fc" id="L123">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan5.getNumberOfDataPoints());</span>
+<span class="fc" id="L124">    Assert.assertEquals(8.6E3f, scan5maxInt, 1E2f);</span>
+
+    // Cleanup
+<span class="fc" id="L127">    rawFile.dispose();</span>
+<span class="fc" id="L128">    newMzMLFile.dispose();</span>
+<span class="fc" id="L129">  }</span>
+
+  @Test
+  public void testSRM() throws MSDKException, IOException {
+
+    // Set up Predicate&lt;MsScan&gt;
+<span class="fc" id="L135">    List&lt;Integer&gt; scansToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L136">    Predicate&lt;MsScan&gt; msScanPredicate = getMsScanPredicate(scansToParse);</span>
+<span class="fc" id="L137">    List&lt;Integer&gt; chromatogramsToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L138">    chromatogramsToParse.addAll(Arrays.asList(1, 2, 4, 19, 36));</span>
+<span class="fc" id="L139">    Predicate&lt;Chromatogram&gt; chromatogramPredicate = getChromatogramPredicate(chromatogramsToParse);</span>
+<span class="fc" id="L140">    List&lt;Integer&gt; newChromatogramsToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L141">    newChromatogramsToParse.addAll(Arrays.asList(1, 2, 3, 4, 5));</span>
+<span class="fc" id="L142">    Predicate&lt;Chromatogram&gt; newChromatogramPredicate =</span>
+<span class="fc" id="L143">        getChromatogramPredicate(newChromatogramsToParse);</span>
+
+    // Import the file
+<span class="fc" id="L146">    String file = &quot;SRM.mzML&quot;;</span>
+<span class="fc" id="L147">    File inputFile = getResourcePath(file).toFile();</span>
+<span class="fc" id="L148">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L149">    MzMLFileImportMethod parser =</span>
+<span class="fc" id="L150">        new MzMLFileImportMethod(inputFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L151">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L152">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L153">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new mzML
+<span class="fc" id="L156">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.mzML&quot;);</span>
+<span class="fc" id="L157">    tempFile.deleteOnExit();</span>
+<span class="fc" id="L158">    MzMLFileExportMethod exporter = new MzMLFileExportMethod(rawFile, tempFile,</span>
+<span class="fc" id="L159">        MzMLCompressionType.NUMPRESS_LINPRED_ZLIB, MzMLCompressionType.ZLIB);</span>
+<span class="fc" id="L160">    exporter.execute();</span>
+<span class="fc" id="L161">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new mzML
+<span class="fc" id="L164">    parser = new MzMLFileImportMethod(tempFile, msScanPredicate, newChromatogramPredicate);</span>
+<span class="fc" id="L165">    RawDataFile newMzMLFile = parser.execute();</span>
+<span class="fc" id="L166">    Assert.assertNotNull(newMzMLFile);</span>
+<span class="fc" id="L167">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 37 chromatograms, 5 pass the predicate
+<span class="fc" id="L170">    List&lt;Chromatogram&gt; chromatograms = newMzMLFile.getChromatograms();</span>
+<span class="fc" id="L171">    Assert.assertNotNull(chromatograms);</span>
+<span class="fc" id="L172">    Assert.assertEquals(37, chromatograms.size());</span>
+
+    // 4th chromatogram, #4
+<span class="fc" id="L175">    Chromatogram chromatogram = chromatograms.get(3);</span>
+<span class="fc" id="L176">    Assert.assertEquals(Integer.valueOf(4), chromatogram.getChromatogramNumber());</span>
+<span class="fc" id="L177">    Assert.assertEquals(ChromatogramType.MRM_SRM, chromatogram.getChromatogramType());</span>
+<span class="fc" id="L178">    Assert.assertEquals(Integer.valueOf(1608), chromatogram.getNumberOfDataPoints());</span>
+<span class="fc" id="L179">    Assert.assertEquals(Integer.valueOf(2), (Integer) chromatogram.getIsolations().size());</span>
+<span class="fc" id="L180">    Assert.assertEquals(Double.valueOf(440.706),</span>
+<span class="fc" id="L181">        chromatogram.getIsolations().get(1).getPrecursorMz());</span>
+<span class="fc" id="L182">    Assert.assertEquals(ActivationType.CID,</span>
+<span class="fc" id="L183">        chromatogram.getIsolations().get(0).getActivationInfo().getActivationType());</span>
+<span class="fc" id="L184">    Assert.assertEquals(0.01095, chromatogram.getRetentionTimes()[0], 0.0001);</span>
+<span class="fc" id="L185">    Assert.assertEquals(38.500003814697266, chromatogram.getIntensityValues()[0], 0.0001);</span>
+
+    // 1st chromatogram, #1
+<span class="fc" id="L188">    chromatogram = chromatograms.get(0);</span>
+<span class="fc" id="L189">    Assert.assertEquals(ChromatogramType.TIC, chromatogram.getChromatogramType());</span>
+<span class="fc" id="L190">    Assert.assertEquals(0, chromatogram.getIsolations().size());</span>
+
+    // Check m/z values
+<span class="fc" id="L193">    Assert.assertEquals(407.706, chromatograms.get(1).getMz(), 0.001);</span>
+<span class="fc" id="L194">    Assert.assertEquals(1084.486, chromatograms.get(18).getMz(), 0.001);</span>
+<span class="fc" id="L195">    Assert.assertEquals(1042.516, chromatograms.get(35).getMz(), 0.001);</span>
+
+    // Cleanup
+<span class="fc" id="L198">    rawFile.dispose();</span>
+<span class="fc" id="L199">    newMzMLFile.dispose();</span>
+<span class="fc" id="L200">  }</span>
+
+  @Test
+  public void testFileWithUV() throws MSDKException, IOException {
+
+    // Set up Predicate&lt;MsScan&gt;
+<span class="fc" id="L206">    List&lt;Integer&gt; scansToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L207">    scansToParse.addAll(Arrays.asList(2114, 2117));</span>
+<span class="fc" id="L208">    Predicate&lt;MsScan&gt; msScanPredicate = getMsScanPredicate(scansToParse);</span>
+<span class="fc" id="L209">    List&lt;Integer&gt; chromatogramsToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L210">    Predicate&lt;Chromatogram&gt; chromatogramPredicate = getChromatogramPredicate(chromatogramsToParse);</span>
+
+    // Import the file
+<span class="fc" id="L213">    String file = &quot;mzML_with_UV.mzML&quot;;</span>
+<span class="fc" id="L214">    final Path path = getResourcePath(file);</span>
+<span class="fc" id="L215">    final File inputFile = path.toFile();</span>
+<span class="fc" id="L216">    MzMLFileImportMethod mzParser =</span>
+<span class="fc" id="L217">        new MzMLFileImportMethod(inputFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L218">    RawDataFile rawFile = mzParser.execute();</span>
+<span class="fc" id="L219">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L220">    Assert.assertEquals(1.0, mzParser.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new mzML
+<span class="fc" id="L223">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.mzML&quot;);</span>
+<span class="fc" id="L224">    tempFile.deleteOnExit();</span>
+<span class="fc" id="L225">    MzMLFileExportMethod exporter = new MzMLFileExportMethod(rawFile, tempFile,</span>
+<span class="fc" id="L226">        MzMLCompressionType.NUMPRESS_LINPRED_ZLIB, MzMLCompressionType.ZLIB);</span>
+<span class="fc" id="L227">    exporter.execute();</span>
+<span class="fc" id="L228">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new mzML
+<span class="fc" id="L231">    mzParser = new MzMLFileImportMethod(tempFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L232">    RawDataFile newMzMLFile = mzParser.execute();</span>
+<span class="fc" id="L233">    Assert.assertNotNull(newMzMLFile);</span>
+<span class="fc" id="L234">    Assert.assertEquals(1.0, mzParser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 27 scans, 2 scans pass the predicate
+<span class="fc" id="L237">    Assert.assertEquals(27, newMzMLFile.getScans().size());</span>
+
+    // 15th Scan, #2114
+<span class="fc" id="L240">    MzMLMsScan scan = (MzMLMsScan) newMzMLFile.getScans().get(14);</span>
+<span class="fc" id="L241">    Assert.assertNotNull(scan);</span>
+<span class="fc" id="L242">    Assert.assertNotNull(scan.getMzValues());</span>
+<span class="fc" id="L243">    Assert.assertNotNull(scan.getIntensityValues());</span>
+<span class="fc" id="L244">    Assert.assertEquals(Integer.valueOf(scan.getMzValues().length), scan.getNumberOfDataPoints());</span>
+<span class="fc" id="L245">    Assert.assertEquals(Integer.valueOf(scan.getIntensityValues().length),</span>
+<span class="fc" id="L246">        scan.getNumberOfDataPoints());</span>
+<span class="fc" id="L247">    Assert.assertEquals(Integer.valueOf(2114), scan.getScanNumber());</span>
+<span class="fc" id="L248">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan.getSpectrumType());</span>
+<span class="fc" id="L249">    Assert.assertEquals(9.939699e06f, scan.getTIC(), 1e01);</span>
+<span class="fc" id="L250">    Assert.assertEquals(100.175651550293, scan.getMzRange().lowerEndpoint(), 0.000001);</span>
+<span class="fc" id="L251">    Assert.assertEquals(999.832214355469, scan.getMzRange().upperEndpoint(), 0.000001);</span>
+<span class="fc" id="L252">    Assert.assertEquals(509.6600036621094, scan.getMzValues()[619], 0.0001);</span>
+<span class="fc" id="L253">    Assert.assertEquals(&quot;+ c ESI Q1MS [100.000-1000.000]&quot;, scan.getScanDefinition());</span>
+<span class="fc" id="L254">    Assert.assertEquals(Integer.valueOf(1), scan.getMsLevel());</span>
+<span class="fc" id="L255">    Assert.assertEquals(PolarityType.POSITIVE, scan.getPolarity());</span>
+<span class="fc" id="L256">    Assert.assertEquals(Float.valueOf((float) (18.89235 * 60)), scan.getRetentionTime());</span>
+
+    // Cleanup
+<span class="fc" id="L259">    rawFile.dispose();</span>
+<span class="fc" id="L260">    newMzMLFile.dispose();</span>
+
+<span class="fc" id="L262">  }</span>
+
+  @Test
+  public void testPwizTiny() throws MSDKException, IOException {
+
+    float intensityBuffer[];
+
+    // Set up Predicate&lt;MsScan&gt;
+<span class="fc" id="L270">    List&lt;Integer&gt; scansToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L271">    scansToParse.addAll(Arrays.asList(20));</span>
+<span class="fc" id="L272">    Predicate&lt;MsScan&gt; msScanPredicate = getMsScanPredicate(scansToParse);</span>
+<span class="fc" id="L273">    List&lt;Integer&gt; chromatogramsToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L274">    Predicate&lt;Chromatogram&gt; chromatogramPredicate = getChromatogramPredicate(chromatogramsToParse);</span>
+
+    // Import the file
+<span class="fc" id="L277">    String file = &quot;tiny.pwiz.idx.mzML&quot;;</span>
+<span class="fc" id="L278">    File inputFile = getResourcePath(file).toFile();</span>
+<span class="fc" id="L279">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L280">    MzMLFileImportMethod parser =</span>
+<span class="fc" id="L281">        new MzMLFileImportMethod(inputFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L282">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L283">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L284">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new mzML
+<span class="fc" id="L287">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.mzML&quot;);</span>
+<span class="fc" id="L288">    tempFile.deleteOnExit();</span>
+    // XXX Zlib compression throws a java.lang.OutOfMemoryError exception
+<span class="fc" id="L290">    MzMLFileExportMethod exporter = new MzMLFileExportMethod(rawFile, tempFile,</span>
+<span class="fc" id="L291">        MzMLCompressionType.NUMPRESS_LINPRED, MzMLCompressionType.NO_COMPRESSION);</span>
+<span class="fc" id="L292">    exporter.execute();</span>
+<span class="fc" id="L293">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new mzML
+<span class="fc" id="L296">    parser = new MzMLFileImportMethod(tempFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L297">    RawDataFile newMzMLFile = parser.execute();</span>
+<span class="fc" id="L298">    Assert.assertNotNull(newMzMLFile);</span>
+<span class="fc" id="L299">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 4 scans, 1 scan in RawFile
+<span class="fc" id="L302">    List&lt;MsScan&gt; scans = newMzMLFile.getScans();</span>
+<span class="fc" id="L303">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L304">    Assert.assertEquals(4, scans.size());</span>
+
+    // 2nd scan, #20
+<span class="fc" id="L307">    MsScan scan2 = scans.get(1);</span>
+<span class="fc" id="L308">    Assert.assertEquals(Integer.valueOf(20), scan2.getScanNumber());</span>
+<span class="fc" id="L309">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan2.getSpectrumType());</span>
+<span class="fc" id="L310">    Assert.assertEquals(Integer.valueOf(2), scan2.getMsLevel());</span>
+<span class="fc" id="L311">    Assert.assertEquals(359.43f, scan2.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L312">    Assert.assertEquals(PolarityType.POSITIVE, scan2.getPolarity());</span>
+<span class="fc" id="L313">    Assert.assertEquals(16.0, scan2.getMzValues()[8], 0.00001);</span>
+<span class="fc" id="L314">    intensityBuffer = scan2.getIntensityValues();</span>
+<span class="fc" id="L315">    Assert.assertEquals(10, (int) scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L316">    Float scan2maxInt =</span>
+<span class="fc" id="L317">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L318">    Assert.assertEquals(20f, scan2maxInt, 0.001f);</span>
+
+<span class="fc" id="L320">    List&lt;IsolationInfo&gt; scan2Isolations = scan2.getIsolations();</span>
+<span class="fc" id="L321">    Assert.assertNotNull(scan2Isolations);</span>
+<span class="fc" id="L322">    Assert.assertEquals(1, scan2Isolations.size());</span>
+
+<span class="fc" id="L324">    IsolationInfo scan2Isolation = scan2Isolations.get(0);</span>
+<span class="fc" id="L325">    Assert.assertEquals(445.34, scan2Isolation.getPrecursorMz(), 0.001);</span>
+<span class="fc" id="L326">    Assert.assertEquals(Integer.valueOf(2), scan2Isolation.getPrecursorCharge());</span>
+
+    // Cleanup
+<span class="fc" id="L329">    rawFile.dispose();</span>
+<span class="fc" id="L330">    newMzMLFile.dispose();</span>
+
+<span class="fc" id="L332">  }</span>
+
+  @Test
+  public void testParamGroup() throws MSDKException, IOException {
+
+    float intensityBuffer[];
+
+    // Set up Predicate&lt;MsScan&gt;
+<span class="fc" id="L340">    List&lt;Integer&gt; scansToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L341">    scansToParse.addAll(Arrays.asList(1001, 1100));</span>
+<span class="fc" id="L342">    Predicate&lt;MsScan&gt; msScanPredicate = getMsScanPredicate(scansToParse);</span>
+<span class="fc" id="L343">    List&lt;Integer&gt; chromatogramsToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L344">    Predicate&lt;Chromatogram&gt; chromatogramPredicate = getChromatogramPredicate(chromatogramsToParse);</span>
+
+    // Import the file
+<span class="fc" id="L347">    String file = &quot;RawCentriodCidWithMsLevelInRefParamGroup.mzML&quot;;</span>
+<span class="fc" id="L348">    File inputFile = getResourcePath(file).toFile();</span>
+<span class="fc" id="L349">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L350">    MzMLFileImportMethod parser =</span>
+<span class="fc" id="L351">        new MzMLFileImportMethod(inputFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L352">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L353">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L354">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new mzML
+<span class="fc" id="L357">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.mzML&quot;);</span>
+<span class="fc" id="L358">    tempFile.deleteOnExit();</span>
+<span class="fc" id="L359">    MzMLFileExportMethod exporter = new MzMLFileExportMethod(rawFile, tempFile,</span>
+<span class="fc" id="L360">        MzMLCompressionType.NUMPRESS_LINPRED_ZLIB, MzMLCompressionType.ZLIB);</span>
+<span class="fc" id="L361">    exporter.execute();</span>
+<span class="fc" id="L362">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new mzML
+<span class="fc" id="L365">    parser = new MzMLFileImportMethod(tempFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L366">    RawDataFile newMzMLFile = parser.execute();</span>
+<span class="fc" id="L367">    Assert.assertNotNull(newMzMLFile);</span>
+<span class="fc" id="L368">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 102 scans, 2 scans pass the predicate
+<span class="fc" id="L371">    List&lt;MsScan&gt; scans = newMzMLFile.getScans();</span>
+<span class="fc" id="L372">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L373">    Assert.assertEquals(102, scans.size());</span>
+
+    // 2nd scan, #1001
+<span class="fc" id="L376">    MsScan scan2 = scans.get(1);</span>
+<span class="fc" id="L377">    Assert.assertEquals(Integer.valueOf(1001), scan2.getScanNumber());</span>
+<span class="fc" id="L378">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan2.getSpectrumType());</span>
+<span class="fc" id="L379">    Assert.assertEquals(Integer.valueOf(2), scan2.getMsLevel());</span>
+<span class="fc" id="L380">    Assert.assertEquals(100.002f, scan2.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L381">    Assert.assertEquals(PolarityType.POSITIVE, scan2.getPolarity());</span>
+<span class="fc" id="L382">    Assert.assertEquals(111.03714243896029, scan2.getMzValues()[10], 0.00001);</span>
+<span class="fc" id="L383">    intensityBuffer = scan2.getIntensityValues();</span>
+<span class="fc" id="L384">    Assert.assertEquals(33, (int) scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L385">    Float scan2maxInt =</span>
+<span class="fc" id="L386">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L387">    Assert.assertEquals(6.8E3f, scan2maxInt, 1E2f);</span>
+
+    // 101st scan, #1100
+<span class="fc" id="L390">    MsScan scan101 = scans.get(100);</span>
+<span class="fc" id="L391">    Assert.assertEquals(Integer.valueOf(1100), scan101.getScanNumber());</span>
+<span class="fc" id="L392">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan101.getSpectrumType());</span>
+<span class="fc" id="L393">    Assert.assertEquals(Integer.valueOf(1), scan101.getMsLevel());</span>
+<span class="fc" id="L394">    Assert.assertEquals(109.998f, scan101.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L395">    Assert.assertEquals(174.10665617189798, scan101.getMzValues()[10], 0.00001);</span>
+<span class="fc" id="L396">    intensityBuffer = scan101.getIntensityValues();</span>
+<span class="fc" id="L397">    Assert.assertEquals(21, (int) scan101.getNumberOfDataPoints());</span>
+<span class="fc" id="L398">    Float scan5maxInt =</span>
+<span class="fc" id="L399">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan101.getNumberOfDataPoints());</span>
+<span class="fc" id="L400">    Assert.assertEquals(1.8E4f, scan5maxInt, 1E2f);</span>
+
+    // Cleanup
+<span class="fc" id="L403">    rawFile.dispose();</span>
+<span class="fc" id="L404">    newMzMLFile.dispose();</span>
+<span class="fc" id="L405">  }</span>
+
+  @Test
+  public void testZlibAndNumpressCompression() throws MSDKException, IOException {
+
+    // Set up Predicate&lt;MsScan&gt;
+<span class="fc" id="L411">    List&lt;Integer&gt; scansToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L412">    scansToParse.addAll(Arrays.asList(2103));</span>
+<span class="fc" id="L413">    Predicate&lt;MsScan&gt; msScanPredicate = getMsScanPredicate(scansToParse);</span>
+<span class="fc" id="L414">    List&lt;Integer&gt; chromatogramsToParse = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L415">    chromatogramsToParse.addAll(Arrays.asList(1));</span>
+<span class="fc" id="L416">    Predicate&lt;Chromatogram&gt; chromatogramPredicate = getChromatogramPredicate(chromatogramsToParse);</span>
+
+    // Import the file
+<span class="fc" id="L419">    String file = &quot;MzValues_Zlib+Numpress.mzML&quot;;</span>
+<span class="fc" id="L420">    File inputFile = getResourcePath(file).toFile();</span>
+<span class="fc" id="L421">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L422">    MzMLFileImportMethod parser =</span>
+<span class="fc" id="L423">        new MzMLFileImportMethod(inputFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L424">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L425">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L426">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new mzML
+<span class="fc" id="L429">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.mzML&quot;);</span>
+<span class="fc" id="L430">    tempFile.deleteOnExit();</span>
+<span class="fc" id="L431">    MzMLFileExportMethod exporter = new MzMLFileExportMethod(rawFile, tempFile,</span>
+<span class="fc" id="L432">        MzMLCompressionType.NUMPRESS_LINPRED_ZLIB, MzMLCompressionType.ZLIB);</span>
+<span class="fc" id="L433">    exporter.execute();</span>
+<span class="fc" id="L434">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new mzML
+<span class="fc" id="L437">    parser = new MzMLFileImportMethod(tempFile, msScanPredicate, chromatogramPredicate);</span>
+<span class="fc" id="L438">    RawDataFile newMzMLFile = parser.execute();</span>
+<span class="fc" id="L439">    Assert.assertNotNull(newMzMLFile);</span>
+<span class="fc" id="L440">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 6 scans, 1 pass the predicate
+<span class="fc" id="L443">    List&lt;MsScan&gt; scans = newMzMLFile.getScans();</span>
+<span class="fc" id="L444">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L445">    Assert.assertEquals(6, scans.size());</span>
+
+    // 4th scan, #2103
+<span class="fc" id="L448">    MsScan scan4 = scans.get(3);</span>
+<span class="fc" id="L449">    Assert.assertEquals(Integer.valueOf(2103), scan4.getScanNumber());</span>
+<span class="fc" id="L450">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan4.getSpectrumType());</span>
+<span class="fc" id="L451">    Assert.assertEquals(Integer.valueOf(1), scan4.getMsLevel());</span>
+<span class="fc" id="L452">    Assert.assertEquals(1127.6449f, scan4.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L453">    Assert.assertEquals(PolarityType.NEGATIVE, scan4.getPolarity());</span>
+<span class="fc" id="L454">    Assert.assertEquals(425.50030515961424, scan4.getMzValues()[510], 0.0001);</span>
+<span class="fc" id="L455">    Assert.assertEquals(1306, (int) scan4.getNumberOfDataPoints());</span>
+<span class="fc" id="L456">    Float scan2maxInt =</span>
+<span class="fc" id="L457">        MsSpectrumUtil.getMaxIntensity(scan4.getIntensityValues(), scan4.getNumberOfDataPoints());</span>
+    // Assert.assertEquals(8746.9599f, scan2maxInt, 0.1f);
+<span class="fc" id="L459">    Assert.assertEquals(8746.96f, scan2maxInt, 0.1f);</span>
+    // Assert.assertEquals(58989.76953125f, scan4.getTIC(), 0.1);
+<span class="fc" id="L461">    Assert.assertEquals(58989.77f, scan4.getTIC(), 0.1);</span>
+<span class="fc" id="L462">    Assert.assertEquals(100.317253112793, scan4.getMzRange().lowerEndpoint(), 0.000001);</span>
+<span class="fc" id="L463">    Assert.assertEquals(999.715515136719, scan4.getMzRange().upperEndpoint(), 0.000001);</span>
+<span class="fc" id="L464">    Assert.assertEquals(&quot;- c ESI Q1MS [100.000-1000.000]&quot;, scan4.getScanDefinition());</span>
+
+    // Test isolation data
+<span class="fc" id="L467">    List&lt;IsolationInfo&gt; scan2isolations = scan4.getIsolations();</span>
+<span class="fc" id="L468">    Assert.assertEquals(0, scan2isolations.size());</span>
+
+    // The file has 2 chromatograms, 1 in RawFile
+<span class="fc" id="L471">    List&lt;Chromatogram&gt; chromatograms = newMzMLFile.getChromatograms();</span>
+<span class="fc" id="L472">    Assert.assertNotNull(chromatograms);</span>
+<span class="fc" id="L473">    Assert.assertEquals(2, chromatograms.size());</span>
+
+    // 1st chromatogram
+<span class="fc" id="L476">    Chromatogram chromatogram = chromatograms.get(0);</span>
+<span class="fc" id="L477">    Assert.assertEquals(1, (int) chromatogram.getChromatogramNumber());</span>
+<span class="fc" id="L478">    Assert.assertEquals(ChromatogramType.TIC, chromatogram.getChromatogramType());</span>
+<span class="fc" id="L479">    Assert.assertEquals(2126, (int) chromatogram.getNumberOfDataPoints());</span>
+<span class="fc" id="L480">    Assert.assertEquals(0, chromatogram.getIsolations().size());</span>
+<span class="fc" id="L481">    float[] rtValues = chromatogram.getRetentionTimes();</span>
+<span class="fc" id="L482">    Assert.assertEquals(2126, rtValues.length);</span>
+<span class="fc" id="L483">    Assert.assertEquals(12.60748291015625, rtValues[1410], 0.0001);</span>
+
+    // Cleanup
+<span class="fc" id="L486">    rawFile.dispose();</span>
+<span class="fc" id="L487">    newMzMLFile.dispose();</span>
+<span class="fc" id="L488">  }</span>
+
+  private Predicate&lt;MsScan&gt; getMsScanPredicate(List&lt;Integer&gt; scansToParse) {
+<span class="pc" id="L491">    return s -&gt; scansToParse.contains(s.getScanNumber());</span>
+  }
+
+  private Predicate&lt;Chromatogram&gt; getChromatogramPredicate(List&lt;Integer&gt; chromatogramsToParse) {
+<span class="pc" id="L495">    return c -&gt; chromatogramsToParse.contains(c.getChromatogramNumber());</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</div></body></html>

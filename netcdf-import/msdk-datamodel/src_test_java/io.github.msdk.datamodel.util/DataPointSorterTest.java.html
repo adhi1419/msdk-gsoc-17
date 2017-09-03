@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DataPointSorterTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.util</a> &gt; <span class="el_source">DataPointSorterTest.java</span></div><h1>DataPointSorterTest.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.util;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import io.github.msdk.util.DataPointSorter;
+import io.github.msdk.util.DataPointSorter.SortingDirection;
+import io.github.msdk.util.DataPointSorter.SortingProperty;
+
+/**
+ * Tests for DataPointSorter
+ */
+<span class="nc" id="L26">public class DataPointSorterTest {</span>
+
+  @Test
+  public void testMzSortAsc() {
+<span class="nc" id="L30">    double mzBuffer[] = {200.0, 200.0001, 200.0002, 300.0, 333.0, 32.0, 35.0, 0.0, 0.0};</span>
+<span class="nc" id="L31">    float intensityBuffer[] = {320f, 35f, 20f, 200.0001f, 200.0002f, 3f, 30f, 0f, 20f};</span>
+<span class="nc" id="L32">    int size = 7;</span>
+<span class="nc" id="L33">    DataPointSorter.sortDataPoints(mzBuffer, intensityBuffer, size, SortingProperty.MZ,</span>
+<span class="nc" id="L34">        SortingDirection.ASCENDING);</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">    for (int i = 1; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">      Assert.assertTrue(mzBuffer[i] &gt;= mzBuffer[i - 1]);</span>
+    }
+<span class="nc" id="L38">  }</span>
+
+  @Test
+  public void testMzSortDesc() {
+<span class="nc" id="L42">    double mzBuffer[] = {32.0, 35.0, 200.0, 200.0001, 200.0002, 333.0, 300.0, 0.0, 0.0};</span>
+<span class="nc" id="L43">    float intensityBuffer[] = {320f, 35f, 20f, 200.0001f, 200.0002f, 3f, 30f, 0f, 20f};</span>
+<span class="nc" id="L44">    int size = 7;</span>
+<span class="nc" id="L45">    DataPointSorter.sortDataPoints(mzBuffer, intensityBuffer, size, SortingProperty.MZ,</span>
+<span class="nc" id="L46">        SortingDirection.DESCENDING);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">    for (int i = 1; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">      Assert.assertTrue(mzBuffer[i] &lt;= mzBuffer[i - 1]);</span>
+    }
+<span class="nc" id="L50">  }</span>
+
+  @Test
+  public void testIntensitySortAsc() {
+<span class="nc" id="L54">    double mzBuffer[] = {32.0, 35.0, 200.0, 200.0001, 200.0002, 333.0, 300.0, 0.0, 0.0};</span>
+<span class="nc" id="L55">    float intensityBuffer[] = {320f, 35f, 20f, 200.0001f, 200.0002f, 3f, 30f, 0f, 20f};</span>
+<span class="nc" id="L56">    int size = 7;</span>
+<span class="nc" id="L57">    DataPointSorter.sortDataPoints(mzBuffer, intensityBuffer, size, SortingProperty.INTENSITY,</span>
+<span class="nc" id="L58">        SortingDirection.ASCENDING);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">    for (int i = 1; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">      Assert.assertTrue(intensityBuffer[i] &gt;= intensityBuffer[i - 1]);</span>
+    }
+<span class="nc" id="L62">  }</span>
+
+  @Test
+  public void testIntensitySortDesc() {
+<span class="nc" id="L66">    double mzBuffer[] = {32.0, 35.0, 200.0, 200.0001, 200.0002, 333.0, 300.0, 0.0, 0.0};</span>
+<span class="nc" id="L67">    float intensityBuffer[] = {320f, 35f, 20f, 200.0001f, 200.0002f, 3f, 30f, 0f, 20f};</span>
+<span class="nc" id="L68">    int size = 7;</span>
+<span class="nc" id="L69">    DataPointSorter.sortDataPoints(mzBuffer, intensityBuffer, size, SortingProperty.INTENSITY,</span>
+<span class="nc" id="L70">        SortingDirection.DESCENDING);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">    for (int i = 1; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">      Assert.assertTrue(intensityBuffer[i] &lt;= intensityBuffer[i - 1]);</span>
+    }
+<span class="nc" id="L74">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

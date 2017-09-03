@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzXMLParserBenchmark.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzxml</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzxml</a> &gt; <span class="el_source">MzXMLParserBenchmark.java</span></div><h1>MzXMLParserBenchmark.java</h1><pre class="source lang-java linenums">package io.github.msdk.io.mzxml;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.github.msdk.MSDKException;
+
+<span class="nc" id="L8">public class MzXMLParserBenchmark {</span>
+
+  public static void main(String[] args) throws MSDKException, NumberFormatException {
+<span class="nc" id="L11">    int numberOfRuns = 10;</span>
+<span class="nc" id="L12">    Logger logger = LoggerFactory.getLogger(MzXMLParserBenchmark.class);</span>
+
+<span class="nc bnc" id="L14" title="All 2 branches missed.">    if (args.length &gt; 0)</span>
+<span class="nc" id="L15">      numberOfRuns = Integer.valueOf(args[0]);</span>
+
+<span class="nc" id="L17">    MzXMLParserTest parserTest = new MzXMLParserTest();</span>
+<span class="nc" id="L18">    MzXMLFileImportMethodTest importTest = new MzXMLFileImportMethodTest();</span>
+
+<span class="nc" id="L20">    long startTime1 = System.currentTimeMillis();</span>
+<span class="nc bnc" id="L21" title="All 2 branches missed.">    for (int i = 0; i &lt; numberOfRuns; i++)</span>
+<span class="nc" id="L22">      parserTest.testA10A2();</span>
+<span class="nc" id="L23">    long endTime1 = System.currentTimeMillis();</span>
+
+<span class="nc" id="L25">    long startTime2 = System.currentTimeMillis();</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">    for (int i = 0; i &lt; numberOfRuns; i++)</span>
+<span class="nc" id="L27">      parserTest.testR1RG59B41();</span>
+<span class="nc" id="L28">    long endTime2 = System.currentTimeMillis();</span>
+
+<span class="nc" id="L30">    long startTime3 = System.currentTimeMillis();</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">    for (int i = 0; i &lt; numberOfRuns; i++)</span>
+<span class="nc" id="L32">      importTest.testA10A2();</span>
+<span class="nc" id="L33">    long endTime3 = System.currentTimeMillis();</span>
+
+<span class="nc" id="L35">    long startTime4 = System.currentTimeMillis();</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">    for (int i = 0; i &lt; numberOfRuns; i++)</span>
+<span class="nc" id="L37">      importTest.testR1RG59B41();</span>
+<span class="nc" id="L38">    long endTime4 = System.currentTimeMillis();</span>
+
+<span class="nc" id="L40">    logger.debug(&quot;Average run time with MzXMLFileParser File 1: &quot;</span>
+<span class="nc" id="L41">        + (endTime1 - startTime1) / numberOfRuns + &quot;ms&quot;);</span>
+<span class="nc" id="L42">    logger.debug(&quot;Average run time with MzXMLFileParser File 2: &quot;</span>
+<span class="nc" id="L43">        + (endTime2 - startTime2) / numberOfRuns + &quot;ms&quot;);</span>
+<span class="nc" id="L44">    logger.debug(&quot;Average run time with MzXMLFileImportMethod File 1: &quot;</span>
+<span class="nc" id="L45">        + (endTime3 - startTime3) / numberOfRuns + &quot;ms&quot;);</span>
+<span class="nc" id="L46">    logger.debug(&quot;Average run time with MzXMLFileImportMethod File 2: &quot;</span>
+<span class="nc" id="L47">        + (endTime4 - startTime4) / numberOfRuns + &quot;ms&quot;);</span>
+
+<span class="nc" id="L49">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

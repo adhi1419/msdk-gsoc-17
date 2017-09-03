@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzXMLFileParser.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzxml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzxml</a> &gt; <span class="el_source">MzXMLFileParser.java</span></div><h1>MzXMLFileParser.java</h1><pre class="source lang-java linenums">package io.github.msdk.io.mzxml;
+
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.Base64;
+import java.util.Date;
+import java.util.zip.InflaterInputStream;
+
+import javax.annotation.Nonnull;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.Duration;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Range;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.MSDKMethod;
+import io.github.msdk.datamodel.impl.SimpleIsolationInfo;
+import io.github.msdk.datamodel.impl.SimpleMsScan;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScanType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.spectra.spectrumtypedetection.SpectrumTypeDetectionAlgorithm;
+import it.unimi.dsi.io.ByteBufferInputStream;
+import javolution.text.CharArray;
+import javolution.xml.internal.stream.XMLStreamReaderImpl;
+import javolution.xml.stream.XMLStreamConstants;
+import javolution.xml.stream.XMLStreamReader;
+
+/**
+ * &lt;p&gt;MzXMLFileParser class.&lt;/p&gt;
+ *
+ */
+public class MzXMLFileParser implements MSDKMethod&lt;RawDataFile&gt; {
+
+  private final @Nonnull File mzXMLFile;
+  private MzXMLRawDataFile newRawFile;
+  private volatile boolean canceled;
+  private Float progress;
+  private int lastLoggedProgress;
+  private Logger logger;
+
+  private SimpleMsScan buildingScan;
+  private DatatypeFactory dataTypeFactory;
+
+  final static String TAG_MS_RUN = &quot;msRun&quot;;
+  final static String TAG_SCAN = &quot;scan&quot;;
+  final static String TAG_PEAKS = &quot;peaks&quot;;
+  final static String TAG_PRECURSOR_MZ = &quot;precursorMz&quot;;
+
+  /**
+   * &lt;p&gt;Constructor for MzXMLFileParser.&lt;/p&gt;
+   *
+   * @param mzXMLFile a {@link java.io.File} object.
+   */
+<span class="fc" id="L62">  public MzXMLFileParser(File mzXMLFile) {</span>
+<span class="fc" id="L63">    this.mzXMLFile = mzXMLFile;</span>
+<span class="fc" id="L64">    this.canceled = false;</span>
+<span class="fc" id="L65">    this.progress = 0f;</span>
+<span class="fc" id="L66">    this.lastLoggedProgress = 0;</span>
+<span class="fc" id="L67">    this.logger = LoggerFactory.getLogger(this.getClass());</span>
+<span class="fc" id="L68">  }</span>
+
+  /**
+   * &lt;p&gt;Constructor for MzXMLFileParser.&lt;/p&gt;
+   *
+   * @param mzXMLFileName a {@link java.lang.String} object.
+   */
+  public MzXMLFileParser(String mzXMLFileName) {
+<span class="nc" id="L76">    this(new File(mzXMLFileName));</span>
+<span class="nc" id="L77">  }</span>
+
+  /**
+   * &lt;p&gt;Constructor for MzXMLFileParser.&lt;/p&gt;
+   *
+   * @param mzXMLFilePath a {@link java.nio.file.Path} object.
+   */
+  public MzXMLFileParser(Path mzXMLFilePath) {
+<span class="nc" id="L85">    this(mzXMLFilePath.toFile());</span>
+<span class="nc" id="L86">  }</span>
+
+  /**
+   * &lt;p&gt;execute.&lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.datamodel.rawdata.RawDataFile} object.
+   * @throws io.github.msdk.MSDKException if any.
+   */
+  public RawDataFile execute() throws MSDKException {
+
+    try {
+<span class="fc" id="L97">      MzXMLFileMemoryMapper mapper = new MzXMLFileMemoryMapper();</span>
+<span class="fc" id="L98">      ByteBufferInputStream is = mapper.mapToMemory(mzXMLFile);</span>
+
+<span class="fc" id="L100">      final XMLStreamReaderImpl xmlStreamReader = new XMLStreamReaderImpl();</span>
+<span class="fc" id="L101">      xmlStreamReader.setInput(is, &quot;UTF-8&quot;);</span>
+
+<span class="fc" id="L103">      newRawFile = new MzXMLRawDataFile(mzXMLFile);</span>
+<span class="fc" id="L104">      dataTypeFactory = DatatypeFactory.newInstance();</span>
+<span class="fc" id="L105">      Vars vars = new Vars();</span>
+
+      int eventType;
+      try {
+
+        do {
+          // check if parsing has been cancelled?
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">          if (canceled)</span>
+<span class="nc" id="L113">            return null;</span>
+
+<span class="fc" id="L115">          eventType = xmlStreamReader.next();</span>
+
+<span class="fc" id="L117">          progress = ((float) xmlStreamReader.getLocation().getCharacterOffset() / is.length());</span>
+
+          // Log progress after every 10% completion
+<span class="fc bfc" id="L120" title="All 2 branches covered.">          if ((int) (progress * 100) &gt;= lastLoggedProgress + 10) {</span>
+<span class="fc" id="L121">            lastLoggedProgress = (int) (progress * 10) * 10;</span>
+<span class="fc" id="L122">            logger.debug(&quot;Parsing in progress... &quot; + lastLoggedProgress + &quot;% completed&quot;);</span>
+          }
+
+<span class="fc bfc" id="L125" title="All 4 branches covered.">          switch (eventType) {</span>
+            case XMLStreamConstants.START_ELEMENT:
+<span class="fc" id="L127">              final CharArray openingTagName = xmlStreamReader.getLocalName();</span>
+<span class="fc" id="L128">              vars.currentTag = openingTagName;</span>
+
+<span class="fc bfc" id="L130" title="All 2 branches covered.">              if (openingTagName.contentEquals(TAG_SCAN)) {</span>
+<span class="fc" id="L131">                CharArray scanNumber = getRequiredAttribute(xmlStreamReader, &quot;num&quot;);</span>
+<span class="fc" id="L132">                CharArray msLevel = getRequiredAttribute(xmlStreamReader, &quot;msLevel&quot;);</span>
+<span class="fc" id="L133">                CharArray peaksCount = getRequiredAttribute(xmlStreamReader, &quot;peaksCount&quot;);</span>
+
+<span class="fc" id="L135">                int scanNumberInt = scanNumber.toInt();</span>
+<span class="fc" id="L136">                int msLevelInt = msLevel.toInt();</span>
+<span class="fc" id="L137">                vars.peaksCount = peaksCount.toInt();</span>
+
+<span class="fc" id="L139">                CharArray msFuncName = xmlStreamReader.getAttributeValue(null, &quot;scanType&quot;);</span>
+
+<span class="fc" id="L141">                buildingScan = new SimpleMsScan(scanNumberInt);</span>
+
+                // MS function
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                if (msFuncName != null) {</span>
+<span class="fc" id="L145">                  buildingScan.setRawDataFile(newRawFile);</span>
+<span class="fc" id="L146">                  buildingScan.setMsLevel(msLevelInt);</span>
+<span class="fc" id="L147">                  buildingScan.setMsFunction(msFuncName.toString());</span>
+
+                  // Scan type &amp; definition
+<span class="fc" id="L150">                  buildingScan.setMsScanType(MsScanType.UNKNOWN);</span>
+
+                  // String filterLine = attrs.getValue(&quot;filterLine&quot;); //Copied from the current
+                  // parser, always null
+<span class="fc" id="L154">                  buildingScan.setScanDefinition(null);</span>
+                }
+
+                // Polarity
+<span class="fc" id="L158">                PolarityType polarity = PolarityType.UNKNOWN;</span>
+<span class="fc" id="L159">                CharArray polarityAttr = xmlStreamReader.getAttributeValue(null, &quot;polarity&quot;);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">                if (polarityAttr != null) {</span>
+<span class="pc bpc" id="L161" title="2 of 3 branches missed.">                  switch (polarityAttr.charAt(0)) {</span>
+                    case '+':
+<span class="fc" id="L163">                      polarity = PolarityType.POSITIVE;</span>
+<span class="fc" id="L164">                      break;</span>
+                    case '-':
+<span class="nc" id="L166">                      polarity = PolarityType.NEGATIVE;</span>
+                      break;
+                  }
+                }
+<span class="fc" id="L170">                buildingScan.setPolarity(polarity);</span>
+
+                // Parse retention time
+<span class="fc" id="L173">                CharArray retentionTimeStr =</span>
+<span class="fc" id="L174">                    xmlStreamReader.getAttributeValue(null, &quot;retentionTime&quot;);</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">                if (retentionTimeStr != null) {</span>
+<span class="fc" id="L176">                  Date currentDate = new Date();</span>
+<span class="fc" id="L177">                  Duration dur = dataTypeFactory.newDuration(retentionTimeStr.toString());</span>
+<span class="fc" id="L178">                  final float rt = (float) (dur.getTimeInMillis(currentDate) / 1000.0);</span>
+<span class="fc" id="L179">                  buildingScan.setRetentionTime(rt);</span>
+                }
+
+<span class="fc bfc" id="L182" title="All 2 branches covered.">              } else if (openingTagName.contentEquals(TAG_PEAKS)) {</span>
+<span class="fc" id="L183">                vars.compressionFlag = false;</span>
+<span class="fc" id="L184">                CharArray compressionType =</span>
+<span class="fc" id="L185">                    xmlStreamReader.getAttributeValue(null, &quot;compressionType&quot;);</span>
+<span class="pc bpc" id="L186" title="1 of 4 branches missed.">                if (compressionType != null &amp;&amp; !compressionType.contentEquals(&quot;none&quot;))</span>
+<span class="fc" id="L187">                  vars.compressionFlag = true;</span>
+
+<span class="fc" id="L189">                CharArray precision = getRequiredAttribute(xmlStreamReader, &quot;precision&quot;);</span>
+<span class="fc" id="L190">                vars.precision = precision.toString();</span>
+
+<span class="fc" id="L192">                vars.peaksStart = xmlStreamReader.getLocation().getCharacterOffset();</span>
+
+<span class="fc bfc" id="L194" title="All 2 branches covered.">              } else if (openingTagName.contentEquals(TAG_PRECURSOR_MZ)) {</span>
+<span class="fc" id="L195">                CharArray precursorCharge =</span>
+<span class="fc" id="L196">                    xmlStreamReader.getAttributeValue(null, &quot;precursorCharge&quot;);</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">                if (precursorCharge != null)</span>
+<span class="fc" id="L198">                  vars.precursorCharge = precursorCharge.toInt();</span>
+
+              }
+
+<span class="fc" id="L202">              break;</span>
+
+            case XMLStreamConstants.END_ELEMENT:
+
+<span class="fc" id="L206">              final CharArray closingTagName = xmlStreamReader.getLocalName();</span>
+
+<span class="pc bpc" id="L208" title="2 of 7 branches missed.">              switch (closingTagName.toString()) {</span>
+                case TAG_SCAN:
+<span class="fc" id="L210">                  newRawFile.addScan(buildingScan);</span>
+<span class="fc" id="L211">                  break;</span>
+                case TAG_PEAKS:
+<span class="fc" id="L213">                  double[] mzValues = new double[vars.peaksCount];</span>
+<span class="fc" id="L214">                  float[] intensityValues = new float[vars.peaksCount];</span>
+
+                  // Base64 decoder
+<span class="fc" id="L217">                  InputStream decodedIs = Base64.getDecoder().wrap(vars.peaksChars);</span>
+<span class="fc" id="L218">                  InflaterInputStream iis = null;</span>
+<span class="fc" id="L219">                  DataInputStream peakStream = null;</span>
+
+                  // Decompress if the array is compressed
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                  if (vars.compressionFlag) {</span>
+<span class="fc" id="L223">                    iis = new InflaterInputStream(decodedIs);</span>
+<span class="fc" id="L224">                    peakStream = new DataInputStream(iis);</span>
+<span class="fc" id="L225">                  } else {</span>
+<span class="fc" id="L226">                    peakStream = new DataInputStream(decodedIs);</span>
+                  }
+
+<span class="fc bfc" id="L229" title="All 2 branches covered.">                  for (int i = 0; i &lt; vars.peaksCount; i++) {</span>
+
+                    // Always respect this order pairOrder=&quot;m/z-int&quot;
+<span class="fc bfc" id="L232" title="All 2 branches covered.">                    if (&quot;64&quot;.equals(vars.precision)) {</span>
+<span class="fc" id="L233">                      mzValues[i] = peakStream.readDouble();</span>
+<span class="fc" id="L234">                      intensityValues[i] = (float) peakStream.readDouble();</span>
+<span class="fc" id="L235">                    } else {</span>
+<span class="fc" id="L236">                      mzValues[i] = (double) peakStream.readFloat();</span>
+<span class="fc" id="L237">                      intensityValues[i] = peakStream.readFloat();</span>
+                    }
+
+                  }
+
+                  // Set the final data points to the scan
+<span class="fc" id="L243">                  buildingScan.setDataPoints(mzValues, intensityValues, vars.peaksCount);</span>
+
+                  // Auto-detect whether this scan is centroided
+<span class="fc" id="L246">                  MsSpectrumType spectrumType = SpectrumTypeDetectionAlgorithm</span>
+<span class="fc" id="L247">                      .detectSpectrumType(mzValues, intensityValues, vars.peaksCount);</span>
+<span class="fc" id="L248">                  buildingScan.setSpectrumType(spectrumType);</span>
+                  break;
+              }
+<span class="fc" id="L251">              break;</span>
+
+            case XMLStreamConstants.CHARACTERS:
+<span class="fc bfc" id="L254" title="All 2 branches covered.">              if (vars.currentTag != null) {</span>
+<span class="pc bpc" id="L255" title="2 of 7 branches missed.">                switch (vars.currentTag.toString()) {</span>
+                  case TAG_PEAKS:
+<span class="fc" id="L257">                    vars.peaksChars = new ByteBufferInputStreamAdapter(is.copy(), vars.peaksStart,</span>
+<span class="fc" id="L258">                        xmlStreamReader.getTextLength());</span>
+<span class="fc" id="L259">                    break;</span>
+                  case TAG_PRECURSOR_MZ:
+<span class="fc" id="L261">                    IsolationInfo newIsolation = new SimpleIsolationInfo(</span>
+<span class="fc" id="L262">                        Range.singleton(xmlStreamReader.getText().toDouble()), null,</span>
+<span class="fc" id="L263">                        xmlStreamReader.getText().toDouble(), vars.precursorCharge, null);</span>
+<span class="fc" id="L264">                    buildingScan.getIsolations().add(newIsolation);</span>
+                    break;
+                }
+              }
+              break;
+          }
+
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        } while (eventType != XMLStreamConstants.END_DOCUMENT);</span>
+
+<span class="pc" id="L273">      } finally {</span>
+<span class="pc bpc" id="L274" title="5 of 6 branches missed.">        if (xmlStreamReader != null) {</span>
+<span class="pc" id="L275">          xmlStreamReader.close();</span>
+        }
+<span class="nc" id="L277">      }</span>
+<span class="pc" id="L278">    } catch (Exception e) {</span>
+<span class="nc" id="L279">      throw (new MSDKException(e));</span>
+    }
+<span class="fc" id="L281">    return newRawFile;</span>
+
+  }
+
+  /**
+   * &lt;p&gt;
+   * Gets the required attribute from xmlStreamReader, throws an exception of the attribute is not
+   * found
+   * &lt;/p&gt;
+   *
+   * @return a CharArray containing the value of the attribute.
+   * @param xmlStreamReader a {@link javolution.xml.stream.XMLStreamReader} object.
+   * @param attr a {@link java.lang.String} object.
+   */
+  public CharArray getRequiredAttribute(XMLStreamReader xmlStreamReader, String attr) {
+<span class="fc" id="L296">    CharArray attrValue = xmlStreamReader.getAttributeValue(null, attr);</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">    if (attrValue == null)</span>
+<span class="nc" id="L298">      throw new IllegalStateException(&quot;Tag &quot; + xmlStreamReader.getLocalName() + &quot; must provide an `&quot;</span>
+<span class="nc" id="L299">          + attr + &quot;`attribute (Line &quot; + xmlStreamReader.getLocation().getLineNumber() + &quot;)&quot;);</span>
+<span class="fc" id="L300">    return attrValue;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getFinishedPercentage() {
+<span class="fc" id="L306">    return progress;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public RawDataFile getResult() {
+<span class="nc" id="L312">    return newRawFile;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void cancel() {
+<span class="nc" id="L318">    this.canceled = true;</span>
+<span class="nc" id="L319">  }</span>
+
+}
+
+
+
+class Vars {
+  String precision;
+  Integer precursorCharge;
+  int peaksCount;
+  boolean compressionFlag;
+  CharArray currentTag;
+  Integer peaksStart;
+  InputStream peaksChars;
+
+<span class="fc" id="L334">  Vars() {</span>
+<span class="fc" id="L335">    precision = null;</span>
+<span class="fc" id="L336">    precursorCharge = null;</span>
+<span class="fc" id="L337">    peaksCount = 0;</span>
+<span class="fc" id="L338">    compressionFlag = false;</span>
+<span class="fc" id="L339">    currentTag = null;</span>
+<span class="fc" id="L340">    peaksStart = 0;</span>
+<span class="fc" id="L341">    peaksChars = null;</span>
+<span class="fc" id="L342">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ByteBufferInputStream.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.util</a> &gt; <span class="el_source">ByteBufferInputStream.java</span></div><h1>ByteBufferInputStream.java</h1><pre class="source lang-java linenums">package io.github.msdk.io.mzml.util;
+
+/*
+ * DSI utilities
+ *
+ * Copyright (C) 2007-2012 Sebastiano Vigna
+ *
+ * This library is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU Lesser General Public License as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License along with this program;
+ * if not, see &lt;http://www.gnu.org/licenses/&gt;.
+ *
+ */
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+import java.util.Arrays;
+
+
+/**
+ * A bridge between byte {@linkplain ByteBuffer buffers} and {@linkplain InputStream input streams}.
+ *
+ * &lt;p&gt;
+ * Java's {@linkplain FileChannel#map(MapMode, long, long) memory-mapping facilities} have the
+ * severe limitation of mapping at most {@link java.lang.Integer#MAX_VALUE} bytes, as they expose the content
+ * of a file using a {@link java.nio.MappedByteBuffer}. This class can
+ * {@linkplain #map(FileChannel, FileChannel.MapMode) expose a file of arbitrary length} as a
+ * {@linkplain RepositionableStream repositionable} {@link MeasurableInputStream} that is actually
+ * based on an array of {@link java.nio.MappedByteBuffer}s, each mapping a &lt;em&gt;chunk&lt;/em&gt; of
+ * {@link #CHUNK_SIZE} bytes.
+ *
+ * @author Sebastiano Vigna
+ * @since 1.2
+ */
+public class ByteBufferInputStream extends InputStream {
+<span class="nc" id="L46">  private static int CHUNK_SHIFT = 30;</span>
+
+  /** The size of a chunk created by {@link #map(FileChannel, FileChannel.MapMode)}. */
+<span class="nc" id="L49">  public static final long CHUNK_SIZE = 1L &lt;&lt; CHUNK_SHIFT;</span>
+
+  /** The underlying byte buffers. */
+  private final ByteBuffer[] byteBuffer;
+
+  /**
+   * An array parallel to {@link #byteBuffer} specifying which buffers do not need to be
+   * {@linkplain ByteBuffer#duplicate() duplicated} before being used.
+   */
+  private final boolean[] readyToUse;
+
+  /** The number of byte buffers. */
+  private final int n;
+
+  /** The current buffer. */
+  private int curr;
+
+  /** The current mark as a position, or -1 if there is no mark. */
+  private long mark;
+
+  /** The overall size of this input stream. */
+  private final long size;
+
+  /** The capacity of the last buffer. */
+  private final int lastBufferCapacity;
+
+  /** Number of bytes to be read before forcefully returning -1 */
+  private long remainingBytes;
+
+  /**
+   * Creates a new byte-buffer input stream from a single {@link java.nio.ByteBuffer}.
+   *
+   * @param byteBuffer the underlying byte buffer.
+   */
+  public ByteBufferInputStream(final ByteBuffer byteBuffer) {
+<span class="nc" id="L84">    this(new ByteBuffer[] {byteBuffer}, byteBuffer.capacity(), 0, new boolean[1]);</span>
+<span class="nc" id="L85">  }</span>
+
+  /**
+   * Creates a new byte-buffer input stream.
+   *
+   * @param byteBuffer the underlying byte buffers.
+   * @param size the sum of the {@linkplain ByteBuffer#capacity() capacities} of the byte buffers.
+   * @param curr the current buffer (reading will start at this buffer from its current position).
+   * @param readyToUse an array parallel to &lt;code&gt;byteBuffer&lt;/code&gt; specifying which buffers do not
+   *        need to be {@linkplain ByteBuffer#duplicate() duplicated} before being used (the process
+   *        will happen lazily); the array will be used internally by the newly created byte-buffer
+   *        input stream.
+   */
+<span class="nc" id="L98">  protected ByteBufferInputStream(final ByteBuffer[] byteBuffer, final long size, final int curr,</span>
+      final boolean[] readyToUse) {
+<span class="nc" id="L100">    this.byteBuffer = byteBuffer;</span>
+<span class="nc" id="L101">    this.n = byteBuffer.length;</span>
+<span class="nc" id="L102">    this.curr = curr;</span>
+<span class="nc" id="L103">    this.size = size;</span>
+<span class="nc" id="L104">    this.readyToUse = readyToUse;</span>
+
+<span class="nc" id="L106">    mark = -1;</span>
+
+<span class="nc bnc" id="L108" title="All 2 branches missed.">    for (int i = 0; i &lt; n; i++)</span>
+<span class="nc bnc" id="L109" title="All 4 branches missed.">      if (i &lt; n - 1 &amp;&amp; byteBuffer[i].capacity() != CHUNK_SIZE)</span>
+<span class="nc" id="L110">        throw new IllegalArgumentException();</span>
+<span class="nc" id="L111">    lastBufferCapacity = byteBuffer[n - 1].capacity();</span>
+<span class="nc" id="L112">  }</span>
+
+  /**
+   * Creates a new byte-buffer input stream by mapping a given file channel.
+   *
+   * @param fileChannel the file channel that will be mapped.
+   * @param mapMode this must be {@link java.nio.channels.FileChannel.MapMode#READ_ONLY}.
+   * @return a new byte-buffer input stream over the contents of &lt;code&gt;fileChannel&lt;/code&gt;.
+   * @throws java.io.IOException if any.
+   */
+  public static ByteBufferInputStream map(final FileChannel fileChannel, final MapMode mapMode)
+      throws IOException {
+<span class="nc" id="L124">    final long size = fileChannel.size();</span>
+<span class="nc" id="L125">    final int chunks = (int) ((size + (CHUNK_SIZE - 1)) / CHUNK_SIZE);</span>
+<span class="nc" id="L126">    final ByteBuffer[] byteBuffer = new ByteBuffer[chunks];</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">    for (int i = 0; i &lt; chunks; i++)</span>
+<span class="nc" id="L128">      byteBuffer[i] =</span>
+<span class="nc" id="L129">          fileChannel.map(mapMode, i * CHUNK_SIZE, Math.min(CHUNK_SIZE, size - i * CHUNK_SIZE));</span>
+<span class="nc" id="L130">    byteBuffer[0].position(0);</span>
+<span class="nc" id="L131">    final boolean[] readyToUse = new boolean[chunks];</span>
+<span class="nc" id="L132">    Arrays.fill(readyToUse, true);</span>
+<span class="nc" id="L133">    return new ByteBufferInputStream(byteBuffer, size, 0, readyToUse);</span>
+  }
+
+  private ByteBuffer byteBuffer(final int n) {
+<span class="nc bnc" id="L137" title="All 2 branches missed.">    if (readyToUse[n])</span>
+<span class="nc" id="L138">      return byteBuffer[n];</span>
+<span class="nc" id="L139">    readyToUse[n] = true;</span>
+<span class="nc" id="L140">    return byteBuffer[n] = byteBuffer[n].duplicate();</span>
+  }
+
+  private long remaining() {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">    return curr == n - 1 ? byteBuffer(curr).remaining()</span>
+<span class="nc" id="L145">        : byteBuffer(curr).remaining() + ((long) (n - 2 - curr) &lt;&lt; CHUNK_SHIFT)</span>
+<span class="nc" id="L146">            + lastBufferCapacity;</span>
+  }
+
+  /**
+   * &lt;p&gt;available.&lt;/p&gt;
+   *
+   * @return a int.
+   */
+  public int available() {
+<span class="nc" id="L155">    final long available = remaining();</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">    return available &lt;= Integer.MAX_VALUE ? (int) available : Integer.MAX_VALUE;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public boolean markSupported() {
+<span class="nc" id="L162">    return true;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public synchronized void mark(final int unused) {
+<span class="nc" id="L168">    mark = position();</span>
+<span class="nc" id="L169">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public synchronized void reset() throws IOException {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">    if (mark == -1)</span>
+<span class="nc" id="L175">      throw new IOException();</span>
+<span class="nc" id="L176">    position(mark);</span>
+<span class="nc" id="L177">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public long skip(final long n) throws IOException {
+<span class="nc" id="L182">    final long toSkip = Math.min(remaining(), n);</span>
+<span class="nc" id="L183">    position(position() + toSkip);</span>
+<span class="nc" id="L184">    return toSkip;</span>
+  }
+
+  private int readBuffer() {
+<span class="nc bnc" id="L188" title="All 2 branches missed.">    if (!byteBuffer(curr).hasRemaining()) {</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">      if (curr &lt; n - 1)</span>
+<span class="nc" id="L190">        byteBuffer(++curr).position(0);</span>
+      else
+<span class="nc" id="L192">        return -1;</span>
+    }
+
+<span class="nc" id="L195">    return byteBuffer[curr].get() &amp; 0xFF;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public int read() {
+<span class="nc bnc" id="L201" title="All 2 branches missed.">    return (remainingBytes-- &lt;= 0 ? -1 : readBuffer());</span>
+  }
+
+  /** {@inheritDoc} */
+  public int read(final byte[] b, final int offset, final int length) {
+<span class="nc bnc" id="L206" title="All 2 branches missed.">    if (length == 0)</span>
+<span class="nc" id="L207">      return 0;</span>
+<span class="nc" id="L208">    final long remaining = remaining();</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">    if (remaining == 0)</span>
+<span class="nc" id="L210">      return -1;</span>
+<span class="nc" id="L211">    final int realLength = (int) Math.min(remaining, length);</span>
+<span class="nc" id="L212">    int read = 0;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">    while (read &lt; realLength) {</span>
+<span class="nc" id="L214">      int rem = byteBuffer(curr).remaining();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">      if (rem == 0)</span>
+<span class="nc" id="L216">        byteBuffer(++curr).position(0);</span>
+<span class="nc" id="L217">      byteBuffer[curr].get(b, offset + read, Math.min(realLength - read, rem));</span>
+<span class="nc" id="L218">      read += Math.min(realLength, rem);</span>
+    }
+<span class="nc" id="L220">    return realLength;</span>
+  }
+
+  /**
+   * &lt;p&gt;length.&lt;/p&gt;
+   *
+   * @return a long.
+   */
+  public long length() {
+<span class="nc" id="L229">    return size;</span>
+  }
+
+  /**
+   * &lt;p&gt;position.&lt;/p&gt;
+   *
+   * @return a long.
+   */
+  public long position() {
+<span class="nc" id="L238">    return ((long) curr &lt;&lt; CHUNK_SHIFT) + byteBuffer(curr).position();</span>
+  }
+
+  /**
+   * &lt;p&gt;position.&lt;/p&gt;
+   *
+   * @param newPosition a long.
+   */
+  public void position(long newPosition) {
+<span class="nc" id="L247">    newPosition = Math.min(newPosition, length());</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">    if (newPosition == length()) {</span>
+<span class="nc" id="L249">      final ByteBuffer buffer = byteBuffer(curr = n - 1);</span>
+<span class="nc" id="L250">      buffer.position(buffer.capacity());</span>
+<span class="nc" id="L251">      return;</span>
+    }
+
+<span class="nc" id="L254">    curr = (int) (newPosition &gt;&gt;&gt; CHUNK_SHIFT);</span>
+<span class="nc" id="L255">    byteBuffer(curr).position((int) (newPosition - ((long) curr &lt;&lt; CHUNK_SHIFT)));</span>
+<span class="nc" id="L256">  }</span>
+
+  /**
+   * &lt;p&gt;copy.&lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.util.ByteBufferInputStream} object.
+   */
+  public ByteBufferInputStream copy() {
+<span class="nc" id="L264">    return new ByteBufferInputStream(byteBuffer.clone(), size, curr, new boolean[n]);</span>
+  }
+
+  /**
+   * &lt;p&gt;constrain.&lt;/p&gt;
+   *
+   * @param position a long.
+   * @param remainingBytes a long.
+   */
+  public void constrain(long position, long remainingBytes) {
+<span class="nc" id="L274">    this.position(position);</span>
+<span class="nc" id="L275">    this.remainingBytes = remainingBytes;</span>
+<span class="nc" id="L276">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

@@ -1,0 +1,1122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MSNumpress.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.util</a> &gt; <span class="el_source">MSNumpress.java</span></div><h1>MSNumpress.java</h1><pre class="source lang-java linenums">/*
+ * MSNumpress.java johan.teleman@immun.lth.se
+ * 
+ * Copyright 2013 Johan Teleman
+ * 
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package io.github.msdk.io.mzml.util;
+
+/**
+ * &lt;p&gt;
+ * MSNumpressDouble class.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L23">public class MSNumpress {</span>
+
+  /// PSI-MS obo accession numbers.
+  /** Constant &lt;code&gt;ACC_NUMPRESS_LINEAR=&quot;MS:1002312&quot;&lt;/code&gt; */
+  public static final String ACC_NUMPRESS_LINEAR = &quot;MS:1002312&quot;;
+  /** Constant &lt;code&gt;ACC_NUMPRESS_PIC=&quot;MS:1002313&quot;&lt;/code&gt; */
+  public static final String ACC_NUMPRESS_PIC = &quot;MS:1002313&quot;;
+  /** Constant &lt;code&gt;ACC_NUMPRESS_SLOF=&quot;MS:1002314&quot;&lt;/code&gt; */
+  public static final String ACC_NUMPRESS_SLOF = &quot;MS:1002314&quot;;
+
+
+  /**
+   * Convenience function for decoding binary data encoded by MSNumpress. If the passed cvAccession
+   * is one of
+   * &lt;p&gt;
+   * ACC_NUMPRESS_LINEAR = &quot;MS:1002312&quot; ACC_NUMPRESS_PIC = &quot;MS:1002313&quot; ACC_NUMPRESS_SLOF =
+   * &quot;MS:1002314&quot;
+   * &lt;p&gt;
+   * the corresponding decode function will be called.
+   *
+   * @param cvAccession The PSI-MS obo CV accession of the encoded data.
+   * @param data array of double to be encoded
+   * @param dataSize number of doubles from data to encode
+   * @return The decoded doubles
+   */
+  public static double[] decode(String cvAccession, byte[] data, int dataSize) {
+
+<span class="nc bnc" id="L50" title="All 10 branches missed.">    switch (cvAccession) {</span>
+      case ACC_NUMPRESS_LINEAR: {
+<span class="nc" id="L52">        double[] buffer = new double[dataSize * 2];</span>
+<span class="nc" id="L53">        int nbrOfDoubles = MSNumpress.decodeLinear(data, dataSize, buffer);</span>
+<span class="nc" id="L54">        double[] result = new double[nbrOfDoubles];</span>
+<span class="nc" id="L55">        System.arraycopy(buffer, 0, result, 0, nbrOfDoubles);</span>
+<span class="nc" id="L56">        return result;</span>
+
+      }
+      case ACC_NUMPRESS_SLOF: {
+<span class="nc" id="L60">        double[] result = new double[dataSize / 2];</span>
+<span class="nc" id="L61">        MSNumpress.decodeSlof(data, dataSize, result);</span>
+<span class="nc" id="L62">        return result;</span>
+
+      }
+      case ACC_NUMPRESS_PIC: {
+<span class="nc" id="L66">        double[] buffer = new double[dataSize * 2];</span>
+<span class="nc" id="L67">        int nbrOfDoubles = MSNumpress.decodePic(data, dataSize, buffer);</span>
+<span class="nc" id="L68">        double[] result = new double[nbrOfDoubles];</span>
+<span class="nc" id="L69">        System.arraycopy(buffer, 0, result, 0, nbrOfDoubles);</span>
+<span class="nc" id="L70">        return result;</span>
+
+      }
+    }
+
+<span class="nc" id="L75">    throw new IllegalArgumentException(&quot;'&quot; + cvAccession + &quot;' is not a numpress compression term&quot;);</span>
+  }
+
+
+  /**
+   * This encoding works on a 4 byte integer, by truncating initial zeros or ones. If the initial
+   * (most significant) half byte is 0x0 or 0xf, the number of such halfbytes starting from the most
+   * significant is stored in a halfbyte. This initial count is then followed by the rest of the
+   * ints halfbytes, in little-endian order. A count halfbyte c of
+   * &lt;p&gt;
+   * 0 &amp;lt;= c &amp;lt;= 8 is interpreted as an initial c 0x0 halfbytes 9 &amp;lt;= c &amp;lt;= 15 is
+   * interpreted as an initial (c-8) 0xf halfbytes
+   * &lt;p&gt;
+   * Ex: int c rest 0 =&amp;gt; 0x8 -1 =&amp;gt; 0xf 0xf 23 =&amp;gt; 0x6 0x7 0x1
+   *
+   * @param x the int to be encoded
+   * @param res the byte array were halfbytes are stored
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @param resOffset position in res were halfbytes are written
+   * @return the number of resulting halfbytes
+   */
+  protected static int encodeInt(long x, byte[] res, int resOffset) {
+    byte i, l;
+    long m;
+<span class="nc" id="L139">    long mask = 0xf0000000;</span>
+<span class="nc" id="L140">    long init = x &amp; mask;</span>
+
+<span class="nc bnc" id="L142" title="All 2 branches missed.">    if (init == 0) {</span>
+<span class="nc" id="L143">      l = 8;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">      for (i = 0; i &lt; 8; i++) {</span>
+<span class="nc" id="L145">        m = mask &gt;&gt; (4 * i);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if ((x &amp; m) != 0) {</span>
+<span class="nc" id="L147">          l = i;</span>
+<span class="nc" id="L148">          break;</span>
+        }
+      }
+<span class="nc" id="L151">      res[resOffset] = l;</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">      for (i = l; i &lt; 8; i++)</span>
+<span class="nc" id="L153">        res[resOffset + 1 + i - l] = (byte) (0xf &amp; (x &gt;&gt; (4 * (i - l))));</span>
+
+<span class="nc" id="L155">      return 1 + 8 - l;</span>
+
+<span class="nc bnc" id="L157" title="All 2 branches missed.">    } else if (init == mask) {</span>
+<span class="nc" id="L158">      l = 7;</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">      for (i = 0; i &lt; 8; i++) {</span>
+<span class="nc" id="L160">        m = mask &gt;&gt; (4 * i);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        if ((x &amp; m) != m) {</span>
+<span class="nc" id="L162">          l = i;</span>
+<span class="nc" id="L163">          break;</span>
+        }
+      }
+<span class="nc" id="L166">      res[resOffset] = (byte) (l | 8);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">      for (i = l; i &lt; 8; i++)</span>
+<span class="nc" id="L168">        res[resOffset + 1 + i - l] = (byte) (0xf &amp; (x &gt;&gt; (4 * (i - l))));</span>
+
+<span class="nc" id="L170">      return 1 + 8 - l;</span>
+
+    } else {
+<span class="nc" id="L173">      res[resOffset] = 0;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">      for (i = 0; i &lt; 8; i++)</span>
+<span class="nc" id="L175">        res[resOffset + 1 + i] = (byte) (0xf &amp; (x &gt;&gt; (4 * i)));</span>
+
+<span class="nc" id="L177">      return 9;</span>
+
+    }
+  }
+
+
+  /**
+   * &lt;p&gt;
+   * encodeFixedPoint.
+   * &lt;/p&gt;
+   *
+   * @param fixedPoint a double.
+   * @param result an array of byte.
+   */
+  public static void encodeFixedPoint(double fixedPoint, byte[] result) {
+<span class="nc" id="L192">    long fp = Double.doubleToLongBits(fixedPoint);</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">    for (int i = 0; i &lt; 8; i++) {</span>
+<span class="nc" id="L194">      result[7 - i] = (byte) ((fp &gt;&gt; (8 * i)) &amp; 0xff);</span>
+    }
+<span class="nc" id="L196">  }</span>
+
+
+  /**
+   * &lt;p&gt;
+   * decodeFixedPoint.
+   * &lt;/p&gt;
+   *
+   * @param data an array of byte.
+   * @return a double.
+   */
+  public static double decodeFixedPoint(byte[] data) {
+<span class="fc" id="L208">    long fp = 0;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">    for (int i = 0; i &lt; 8; i++) {</span>
+<span class="fc" id="L210">      fp = fp | ((0xFFL &amp; data[7 - i]) &lt;&lt; (8 * i));</span>
+    }
+<span class="fc" id="L212">    return Double.longBitsToDouble(fp);</span>
+  }
+
+
+  /////////////////////////////////////////////////////////////////////////////////
+
+
+  /**
+   * &lt;p&gt;
+   * optimalLinearFixedPoint.
+   * &lt;/p&gt;
+   *
+   * @param data an array of double.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @return a double.
+   */
+  public static double optimalLinearFixedPoint(double[] data, int dataSize) {
+<span class="nc bnc" id="L234" title="All 2 branches missed.">    if (dataSize == 0)</span>
+<span class="nc" id="L235">      return 0;</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">    if (dataSize == 1)</span>
+<span class="nc" id="L237">      return Math.floor(0xFFFFFFFFL / data[0]);</span>
+<span class="nc" id="L238">    double maxDouble = Math.max(data[0], data[1]);</span>
+
+<span class="nc bnc" id="L240" title="All 2 branches missed.">    for (int i = 2; i &lt; dataSize; i++) {</span>
+<span class="nc" id="L241">      double extrapol = data[i - 1] + (data[i - 1] - data[i - 2]);</span>
+<span class="nc" id="L242">      double diff = data[i] - extrapol;</span>
+<span class="nc" id="L243">      maxDouble = Math.max(maxDouble, Math.ceil(Math.abs(diff) + 1));</span>
+    }
+
+<span class="nc" id="L246">    return Math.floor(0x7FFFFFFFL / maxDouble);</span>
+  }
+
+
+  /**
+   * Encodes the doubles in data by first using a - lossy conversion to a 4 byte 5 decimal fixed
+   * point repressentation - storing the residuals from a linear prediction after first to values -
+   * encoding by encodeInt (see above)
+   * &lt;p&gt;
+   * The resulting binary is maximally 8 + dataSize * 5 bytes, but much less if the data is
+   * reasonably smooth on the first order.
+   * &lt;p&gt;
+   * This encoding is suitable for typical m/z or retention time binary arrays. On a test set, the
+   * encoding was empirically show to be accurate to at least 0.002 ppm.
+   *
+   * @param data array of doubles to be encoded
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param result array were resulting bytes should be stored
+   * @param fixedPoint the scaling factor used for getting the fixed point repr. This is stored in
+   *        the binary and automatically extracted on decoding.
+   * @return the number of encoded bytes
+   */
+  public static int encodeLinear(double[] data, int dataSize, byte[] result, double fixedPoint) {
+<span class="nc" id="L310">    long[] ints = new long[3];</span>
+    int i, ri, halfByteCount, hbi;
+<span class="nc" id="L312">    byte halfBytes[] = new byte[10];</span>
+    long extrapol, diff;
+
+<span class="nc" id="L315">    encodeFixedPoint(fixedPoint, result);</span>
+
+<span class="nc bnc" id="L317" title="All 2 branches missed.">    if (dataSize == 0)</span>
+<span class="nc" id="L318">      return 8;</span>
+
+<span class="nc" id="L320">    ints[1] = (long) (data[0] * fixedPoint + 0.5);</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">    for (i = 0; i &lt; 4; i++) {</span>
+<span class="nc" id="L322">      result[8 + i] = (byte) ((ints[1] &gt;&gt; (i * 8)) &amp; 0xff);</span>
+    }
+
+<span class="nc bnc" id="L325" title="All 2 branches missed.">    if (dataSize == 1)</span>
+<span class="nc" id="L326">      return 12;</span>
+
+<span class="nc" id="L328">    ints[2] = (long) (data[1] * fixedPoint + 0.5);</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">    for (i = 0; i &lt; 4; i++) {</span>
+<span class="nc" id="L330">      result[12 + i] = (byte) ((ints[2] &gt;&gt; (i * 8)) &amp; 0xff);</span>
+    }
+
+<span class="nc" id="L333">    halfByteCount = 0;</span>
+<span class="nc" id="L334">    ri = 16;</span>
+
+<span class="nc bnc" id="L336" title="All 2 branches missed.">    for (i = 2; i &lt; dataSize; i++) {</span>
+<span class="nc" id="L337">      ints[0] = ints[1];</span>
+<span class="nc" id="L338">      ints[1] = ints[2];</span>
+<span class="nc" id="L339">      ints[2] = (long) (data[i] * fixedPoint + 0.5);</span>
+<span class="nc" id="L340">      extrapol = ints[1] + (ints[1] - ints[0]);</span>
+<span class="nc" id="L341">      diff = ints[2] - extrapol;</span>
+<span class="nc" id="L342">      halfByteCount += encodeInt(diff, halfBytes, halfByteCount);</span>
+
+<span class="nc bnc" id="L344" title="All 2 branches missed.">      for (hbi = 1; hbi &lt; halfByteCount; hbi += 2)</span>
+<span class="nc" id="L345">        result[ri++] = (byte) ((halfBytes[hbi - 1] &lt;&lt; 4) | (halfBytes[hbi] &amp; 0xf));</span>
+
+<span class="nc bnc" id="L347" title="All 2 branches missed.">      if (halfByteCount % 2 != 0) {</span>
+<span class="nc" id="L348">        halfBytes[0] = halfBytes[halfByteCount - 1];</span>
+<span class="nc" id="L349">        halfByteCount = 1;</span>
+<span class="nc" id="L350">      } else</span>
+<span class="nc" id="L351">        halfByteCount = 0;</span>
+
+    }
+<span class="nc bnc" id="L354" title="All 2 branches missed.">    if (halfByteCount == 1)</span>
+<span class="nc" id="L355">      result[ri++] = (byte) (halfBytes[0] &lt;&lt; 4);</span>
+
+<span class="nc" id="L357">    return ri;</span>
+  }
+
+
+  /**
+   * Decodes data encoded by encodeLinear.
+   * &lt;p&gt;
+   * result vector guaranteed to be shorter or equal to (|data| - 8) * 2
+   * &lt;p&gt;
+   * Note that this method may throw a ArrayIndexOutOfBoundsException if it deems the input data to
+   * be corrupt, i.e. that the last encoded int does not use the last byte in the data. In addition
+   * the last encoded int need to use either the last halfbyte, or the second last followed by a 0x0
+   * halfbyte.
+   *
+   * @param data array of bytes to be decoded
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param result array were resulting doubles should be stored
+   * @return the number of decoded doubles, or -1 if dataSize &amp;lt; 4 or 4 &amp;lt; dataSize &amp;lt; 8
+   */
+  public static int decodeLinear(byte[] data, int dataSize, double[] result) {
+<span class="fc" id="L418">    int ri = 2;</span>
+<span class="fc" id="L419">    long[] ints = new long[3];</span>
+    long extrapol;
+    long y;
+<span class="fc" id="L422">    IntDecoder dec = new IntDecoder(data, 16);</span>
+
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">    if (dataSize &lt; 8)</span>
+<span class="nc" id="L425">      return -1;</span>
+<span class="fc" id="L426">    double fixedPoint = decodeFixedPoint(data);</span>
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">    if (dataSize &lt; 12)</span>
+<span class="nc" id="L428">      return -1;</span>
+
+<span class="fc" id="L430">    ints[1] = 0;</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">    for (int i = 0; i &lt; 4; i++) {</span>
+<span class="fc" id="L432">      ints[1] = ints[1] | ((0xFFL &amp; data[8 + i]) &lt;&lt; (i * 8));</span>
+    }
+<span class="fc" id="L434">    result[0] = ints[1] / fixedPoint;</span>
+
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">    if (dataSize == 12)</span>
+<span class="nc" id="L437">      return 1;</span>
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">    if (dataSize &lt; 16)</span>
+<span class="nc" id="L439">      return -1;</span>
+
+<span class="fc" id="L441">    ints[2] = 0;</span>
+<span class="fc bfc" id="L442" title="All 2 branches covered.">    for (int i = 0; i &lt; 4; i++) {</span>
+<span class="fc" id="L443">      ints[2] = ints[2] | ((0xFFL &amp; data[12 + i]) &lt;&lt; (i * 8));</span>
+    }
+<span class="fc" id="L445">    result[1] = ints[2] / fixedPoint;</span>
+
+<span class="fc bfc" id="L447" title="All 2 branches covered.">    while (dec.pos &lt; dataSize) {</span>
+<span class="pc bpc" id="L448" title="3 of 4 branches missed.">      if (dec.pos == (dataSize - 1) &amp;&amp; dec.half)</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">        if ((data[dec.pos] &amp; 0xf) != 0x8)</span>
+<span class="nc" id="L450">          break;</span>
+
+<span class="fc" id="L452">      ints[0] = ints[1];</span>
+<span class="fc" id="L453">      ints[1] = ints[2];</span>
+<span class="fc" id="L454">      ints[2] = dec.next();</span>
+
+<span class="fc" id="L456">      extrapol = ints[1] + (ints[1] - ints[0]);</span>
+<span class="fc" id="L457">      y = extrapol + ints[2];</span>
+<span class="fc" id="L458">      result[ri++] = y / fixedPoint;</span>
+<span class="fc" id="L459">      ints[2] = y;</span>
+    }
+
+<span class="fc" id="L462">    return ri;</span>
+  }
+
+  /**
+   * Decodes data encoded by encodeLinear.
+   * &lt;p&gt;
+   * result vector guaranteed to be shorter or equal to (|data| - 8) * 2
+   * &lt;p&gt;
+   * Note that this method may throw a ArrayIndexOutOfBoundsException if it deems the input data to
+   * be corrupt, i.e. that the last encoded int does not use the last byte in the data. In addition
+   * the last encoded int need to use either the last halfbyte, or the second last followed by a 0x0
+   * halfbyte.
+   *
+   * @param data array of bytes to be decoded
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param result array were resulting floats should be stored
+   * @return the number of decoded floats, or -1 if dataSize &amp;lt; 4 or 4 &amp;lt; dataSize &amp;lt; 8
+   */
+  public static int decodeLinear(byte[] data, int dataSize, float[] result) {
+<span class="nc" id="L522">    int ri = 2;</span>
+<span class="nc" id="L523">    long[] ints = new long[3];</span>
+    long extrapol;
+    long y;
+<span class="nc" id="L526">    IntDecoder dec = new IntDecoder(data, 16);</span>
+
+<span class="nc bnc" id="L528" title="All 2 branches missed.">    if (dataSize &lt; 8)</span>
+<span class="nc" id="L529">      return -1;</span>
+<span class="nc" id="L530">    float fixedPoint = (float) decodeFixedPoint(data);</span>
+<span class="nc bnc" id="L531" title="All 2 branches missed.">    if (dataSize &lt; 12)</span>
+<span class="nc" id="L532">      return -1;</span>
+
+<span class="nc" id="L534">    ints[1] = 0;</span>
+<span class="nc bnc" id="L535" title="All 2 branches missed.">    for (int i = 0; i &lt; 4; i++) {</span>
+<span class="nc" id="L536">      ints[1] = ints[1] | ((0xFFL &amp; data[8 + i]) &lt;&lt; (i * 8));</span>
+    }
+<span class="nc" id="L538">    result[0] = ints[1] / fixedPoint;</span>
+
+<span class="nc bnc" id="L540" title="All 2 branches missed.">    if (dataSize == 12)</span>
+<span class="nc" id="L541">      return 1;</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">    if (dataSize &lt; 16)</span>
+<span class="nc" id="L543">      return -1;</span>
+
+<span class="nc" id="L545">    ints[2] = 0;</span>
+<span class="nc bnc" id="L546" title="All 2 branches missed.">    for (int i = 0; i &lt; 4; i++) {</span>
+<span class="nc" id="L547">      ints[2] = ints[2] | ((0xFFL &amp; data[12 + i]) &lt;&lt; (i * 8));</span>
+    }
+<span class="nc" id="L549">    result[1] = ints[2] / fixedPoint;</span>
+
+<span class="nc bnc" id="L551" title="All 2 branches missed.">    while (dec.pos &lt; dataSize) {</span>
+<span class="nc bnc" id="L552" title="All 4 branches missed.">      if (dec.pos == (dataSize - 1) &amp;&amp; dec.half)</span>
+<span class="nc bnc" id="L553" title="All 2 branches missed.">        if ((data[dec.pos] &amp; 0xf) != 0x8)</span>
+<span class="nc" id="L554">          break;</span>
+
+<span class="nc" id="L556">      ints[0] = ints[1];</span>
+<span class="nc" id="L557">      ints[1] = ints[2];</span>
+<span class="nc" id="L558">      ints[2] = dec.next();</span>
+
+<span class="nc" id="L560">      extrapol = ints[1] + (ints[1] - ints[0]);</span>
+<span class="nc" id="L561">      y = extrapol + ints[2];</span>
+<span class="nc" id="L562">      result[ri++] = y / fixedPoint;</span>
+<span class="nc" id="L563">      ints[2] = y;</span>
+    }
+
+<span class="nc" id="L566">    return ri;</span>
+  }
+
+
+  /////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * Encodes ion counts by simply rounding to the nearest 4 byte integer, and compressing each
+   * integer with encodeInt.
+   * &lt;p&gt;
+   * The handleable range is therefore 0 -&amp;gt; 4294967294. The resulting binary is maximally
+   * dataSize * 5 bytes, but much less if the data is close to 0 on average.
+   *
+   * @param data array of doubles to be encoded
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param result array were resulting bytes should be stored
+   * @return the number of encoded bytes
+   */
+  public static int encodePic(double[] data, int dataSize, byte[] result) {
+    long count;
+<span class="nc" id="L627">    int ri = 0;</span>
+    int hbi;
+<span class="nc" id="L629">    byte halfBytes[] = new byte[10];</span>
+<span class="nc" id="L630">    int halfByteCount = 0;</span>
+
+    // printf(&quot;Encoding %d doubles\n&quot;, (int)dataSize);
+
+<span class="nc bnc" id="L634" title="All 2 branches missed.">    for (int i = 0; i &lt; dataSize; i++) {</span>
+<span class="nc" id="L635">      count = (long) (data[i] + 0.5);</span>
+<span class="nc" id="L636">      halfByteCount += encodeInt(count, halfBytes, halfByteCount);</span>
+
+<span class="nc bnc" id="L638" title="All 2 branches missed.">      for (hbi = 1; hbi &lt; halfByteCount; hbi += 2)</span>
+<span class="nc" id="L639">        result[ri++] = (byte) ((halfBytes[hbi - 1] &lt;&lt; 4) | (halfBytes[hbi] &amp; 0xf));</span>
+
+<span class="nc bnc" id="L641" title="All 2 branches missed.">      if (halfByteCount % 2 != 0) {</span>
+<span class="nc" id="L642">        halfBytes[0] = halfBytes[halfByteCount - 1];</span>
+<span class="nc" id="L643">        halfByteCount = 1;</span>
+<span class="nc" id="L644">      } else</span>
+<span class="nc" id="L645">        halfByteCount = 0;</span>
+
+    }
+<span class="nc bnc" id="L648" title="All 2 branches missed.">    if (halfByteCount == 1)</span>
+<span class="nc" id="L649">      result[ri++] = (byte) (halfBytes[0] &lt;&lt; 4);</span>
+
+<span class="nc" id="L651">    return ri;</span>
+  }
+
+
+  /**
+   * Decodes data encoded by encodePic
+   * &lt;p&gt;
+   * result vector guaranteed to be shorter of equal to |data| * 2
+   * &lt;p&gt;
+   * Note that this method may throw a ArrayIndexOutOfBoundsException if it deems the input data to
+   * be corrupt, i.e. that the last encoded int does not use the last byte in the data. In addition
+   * the last encoded int need to use either the last halfbyte, or the second last followed by a 0x0
+   * halfbyte.
+   *
+   * @param data array of bytes to be decoded (need memorycont. repr.)
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param result array were resulting doubles should be stored
+   * @return the number of decoded doubles
+   */
+  public static int decodePic(byte[] data, int dataSize, double[] result) {
+<span class="nc" id="L712">    int ri = 0;</span>
+    long count;
+<span class="nc" id="L714">    IntDecoder dec = new IntDecoder(data, 0);</span>
+
+<span class="nc bnc" id="L716" title="All 2 branches missed.">    while (dec.pos &lt; dataSize) {</span>
+<span class="nc bnc" id="L717" title="All 4 branches missed.">      if (dec.pos == (dataSize - 1) &amp;&amp; dec.half)</span>
+<span class="nc bnc" id="L718" title="All 2 branches missed.">        if ((data[dec.pos] &amp; 0xf) != 0x8)</span>
+<span class="nc" id="L719">          break;</span>
+
+<span class="nc" id="L721">      count = dec.next();</span>
+<span class="nc" id="L722">      result[ri++] = count;</span>
+    }
+<span class="nc" id="L724">    return ri;</span>
+  }
+
+  /**
+   * Decodes data encoded by encodePic
+   * &lt;p&gt;
+   * result vector guaranteed to be shorter of equal to |data| * 2
+   * &lt;p&gt;
+   * Note that this method may throw a ArrayIndexOutOfBoundsException if it deems the input data to
+   * be corrupt, i.e. that the last encoded int does not use the last byte in the data. In addition
+   * the last encoded int need to use either the last halfbyte, or the second last followed by a 0x0
+   * halfbyte.
+   *
+   * @param data array of bytes to be decoded (need memorycont. repr.)
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param result array were resulting floats should be stored
+   * @return the number of decoded floats
+   */
+  public static int decodePic(byte[] data, int dataSize, float[] result) {
+<span class="nc" id="L784">    int ri = 0;</span>
+    long count;
+<span class="nc" id="L786">    IntDecoder dec = new IntDecoder(data, 0);</span>
+
+<span class="nc bnc" id="L788" title="All 2 branches missed.">    while (dec.pos &lt; dataSize) {</span>
+<span class="nc bnc" id="L789" title="All 4 branches missed.">      if (dec.pos == (dataSize - 1) &amp;&amp; dec.half)</span>
+<span class="nc bnc" id="L790" title="All 2 branches missed.">        if ((data[dec.pos] &amp; 0xf) != 0x8)</span>
+<span class="nc" id="L791">          break;</span>
+
+<span class="nc" id="L793">      count = dec.next();</span>
+<span class="nc" id="L794">      result[ri++] = count;</span>
+    }
+<span class="nc" id="L796">    return ri;</span>
+  }
+
+  /**
+   * Decodes data encoded by encodeSlof
+   * &lt;p&gt;
+   * The result vector will be exactly (|data| - 8) / 2 floats. returns the number of floats read,
+   * or -1 is there is a problem decoding.
+   *
+   * @param data array of bytes to be decoded (need memorycont. repr.)
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param result array were resulting floats should be stored
+   * @return the number of decoded floats
+   */
+  public static int decodeSlof(byte[] data, int dataSize, float[] result) {
+    int x;
+<span class="nc" id="L853">    int ri = 0;</span>
+
+<span class="nc bnc" id="L855" title="All 2 branches missed.">    if (dataSize &lt; 8)</span>
+<span class="nc" id="L856">      return -1;</span>
+<span class="nc" id="L857">    float fixedPoint = (float) decodeFixedPoint(data);</span>
+
+<span class="nc bnc" id="L859" title="All 2 branches missed.">    if (dataSize % 2 != 0)</span>
+<span class="nc" id="L860">      return -1;</span>
+
+<span class="nc bnc" id="L862" title="All 2 branches missed.">    for (int i = 8; i &lt; dataSize; i += 2) {</span>
+<span class="nc" id="L863">      x = (0xff &amp; data[i]) | ((0xff &amp; data[i + 1]) &lt;&lt; 8);</span>
+<span class="nc" id="L864">      result[ri++] = (float) (Math.exp(((float) (0xffff &amp; x)) / fixedPoint) - 1);</span>
+    }
+<span class="nc" id="L866">    return ri;</span>
+  }
+
+
+  /////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * &lt;p&gt;
+   * optimalSlofFixedPoint.
+   * &lt;/p&gt;
+   *
+   * @param data an array of double.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @param dataSize a int.
+   * @return a double.
+   */
+  public static double optimalSlofFixedPoint(double[] data, int dataSize) {
+<span class="nc bnc" id="L887" title="All 2 branches missed.">    if (dataSize == 0)</span>
+<span class="nc" id="L888">      return 0;</span>
+
+<span class="nc" id="L890">    double maxDouble = 1;</span>
+    double x;
+    double fp;
+
+<span class="nc bnc" id="L894" title="All 2 branches missed.">    for (int i = 0; i &lt; dataSize; i++) {</span>
+<span class="nc" id="L895">      x = Math.log(data[i] + 1);</span>
+<span class="nc" id="L896">      maxDouble = Math.max(maxDouble, x);</span>
+    }
+
+<span class="nc" id="L899">    fp = Math.floor(0xFFFF / maxDouble);</span>
+
+<span class="nc" id="L901">    return fp;</span>
+  }
+
+  /**
+   * Encodes ion counts by taking the natural logarithm, and storing a fixed point representation of
+   * this. This is calculated as
+   * &lt;p&gt;
+   * unsigned short fp = log(d+1) * fixedPoint + 0.5
+   * &lt;p&gt;
+   * the result vector is exactly |data| * 2 + 8 bytes long
+   *
+   * @param data array of doubles to be encoded
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param dataSize number of doubles from data to encode
+   * @param result array were resulting bytes should be stored
+   * @param fixedPoint the scaling factor used for getting the fixed point repr. This is stored in
+   *        the binary and automatically extracted on decoding.
+   * @return the number of encoded bytes
+   */
+  public static int encodeSlof(double[] data, int dataSize, byte[] result, double fixedPoint) {
+    int x;
+<span class="nc" id="L962">    int ri = 8;</span>
+
+<span class="nc" id="L964">    encodeFixedPoint(fixedPoint, result);</span>
+
+<span class="nc bnc" id="L966" title="All 2 branches missed.">    for (int i = 0; i &lt; dataSize; i++) {</span>
+<span class="nc" id="L967">      x = (int) (Math.log(data[i] + 1) * fixedPoint + 0.5);</span>
+
+<span class="nc" id="L969">      result[ri++] = (byte) (0xff &amp; x);</span>
+<span class="nc" id="L970">      result[ri++] = (byte) (x &gt;&gt; 8);</span>
+    }
+<span class="nc" id="L972">    return ri;</span>
+  }
+
+
+  /**
+   * Decodes data encoded by encodeSlof
+   * &lt;p&gt;
+   * The result vector will be exactly (|data| - 8) / 2 doubles. returns the number of doubles read,
+   * or -1 is there is a problem decoding.
+   *
+   * @param data array of bytes to be decoded (need memorycont. repr.)
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param dataSize number of bytes from data to decode
+   * @param result array were resulting doubles should be stored
+   * @return the number of decoded doubles
+   */
+  public static int decodeSlof(byte[] data, int dataSize, double[] result) {
+    int x;
+<span class="nc" id="L1030">    int ri = 0;</span>
+
+<span class="nc bnc" id="L1032" title="All 2 branches missed.">    if (dataSize &lt; 8)</span>
+<span class="nc" id="L1033">      return -1;</span>
+<span class="nc" id="L1034">    double fixedPoint = decodeFixedPoint(data);</span>
+
+<span class="nc bnc" id="L1036" title="All 2 branches missed.">    if (dataSize % 2 != 0)</span>
+<span class="nc" id="L1037">      return -1;</span>
+
+<span class="nc bnc" id="L1039" title="All 2 branches missed.">    for (int i = 8; i &lt; dataSize; i += 2) {</span>
+<span class="nc" id="L1040">      x = (0xff &amp; data[i]) | ((0xff &amp; data[i + 1]) &lt;&lt; 8);</span>
+<span class="nc" id="L1041">      result[ri++] = Math.exp(((double) (0xffff &amp; x)) / fixedPoint) - 1;</span>
+    }
+<span class="nc" id="L1043">    return ri;</span>
+  }
+
+}
+
+
+/**
+ * Decodes ints from the half bytes in bytes. Lossless reverse of encodeInt, although not
+ * symmetrical in input arguments.
+ */
+class IntDecoder {
+
+<span class="fc" id="L1055">  int pos = 0;</span>
+<span class="fc" id="L1056">  boolean half = false;</span>
+  byte[] bytes;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for IntDecoder.
+   * &lt;/p&gt;
+   *
+   * @param _bytes an array of byte.
+   * @param _pos a int.
+   */
+<span class="fc" id="L1067">  public IntDecoder(byte[] _bytes, int _pos) {</span>
+<span class="fc" id="L1068">    bytes = _bytes;</span>
+<span class="fc" id="L1069">    pos = _pos;</span>
+<span class="fc" id="L1070">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * next.
+   * &lt;/p&gt;
+   *
+   * @return a long.
+   */
+  public long next() {
+    int head;
+    int i, n;
+<span class="fc" id="L1082">    long res = 0;</span>
+    long mask, m;
+    int hb;
+
+<span class="fc bfc" id="L1086" title="All 2 branches covered.">    if (!half)</span>
+<span class="fc" id="L1087">      head = (0xff &amp; bytes[pos]) &gt;&gt; 4;</span>
+    else
+<span class="fc" id="L1089">      head = 0xf &amp; bytes[pos++];</span>
+
+<span class="fc bfc" id="L1091" title="All 2 branches covered.">    half = !half;</span>
+
+<span class="fc bfc" id="L1093" title="All 2 branches covered.">    if (head &lt;= 8)</span>
+<span class="fc" id="L1094">      n = head;</span>
+    else {
+      // leading ones, fill in res
+<span class="fc" id="L1097">      n = head - 8;</span>
+<span class="fc" id="L1098">      mask = 0xf0000000;</span>
+<span class="fc bfc" id="L1099" title="All 2 branches covered.">      for (i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L1100">        m = mask &gt;&gt; (4 * i);</span>
+<span class="fc" id="L1101">        res = res | m;</span>
+      }
+    }
+
+<span class="pc bpc" id="L1105" title="1 of 2 branches missed.">    if (n == 8)</span>
+<span class="nc" id="L1106">      return 0;</span>
+
+<span class="fc bfc" id="L1108" title="All 2 branches covered.">    for (i = n; i &lt; 8; i++) {</span>
+<span class="fc bfc" id="L1109" title="All 2 branches covered.">      if (!half)</span>
+<span class="fc" id="L1110">        hb = (0xff &amp; bytes[pos]) &gt;&gt; 4;</span>
+      else
+<span class="fc" id="L1112">        hb = 0xf &amp; bytes[pos++];</span>
+
+<span class="fc" id="L1114">      res = res | (hb &lt;&lt; ((i - n) * 4));</span>
+<span class="fc bfc" id="L1115" title="All 2 branches covered.">      half = !half;</span>
+    }
+
+<span class="fc" id="L1118">    return res;</span>
+  }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>

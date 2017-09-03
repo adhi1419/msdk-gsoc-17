@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MsScanType.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.rawdata</a> &gt; <span class="el_source">MsScanType.java</span></div><h1>MsScanType.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*</span>
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.rawdata;
+
+/**
+ * Represents the type of MS scan.
+ *
+ * See also K. K. Murray, R. K. Boyd, M. N. Eberlin, G. J. Langley, L. Li and Y. Naito, Definitions
+ * of Terms Relating to Mass Spectrometry (IUPAC Recommendations 2013) Pure Appl. Chem. 2013, 85,
+ * 1515-1609.
+ */
+<span class="nc" id="L23">public enum MsScanType {</span>
+
+<span class="nc" id="L25">  /**</span>
+   * Full MS scan.
+   */
+<span class="nc" id="L28">  FULLMS,</span>
+
+<span class="nc" id="L30">  /**</span>
+   * Fragmentation (tandem MS, or MS/MS) scan.
+   */
+<span class="nc" id="L33">  MSMS,</span>
+
+<span class="nc" id="L35">  /**</span>
+   * Single ion monitoring (SIM) scan. This scan isolates a narrow range of m/z values before
+   * scanning, thus increasing the sensitivity in this range.
+   */
+<span class="nc" id="L39">  SIM,</span>
+
+<span class="nc" id="L41">  /**</span>
+   * Multiple Reaction Monitoring (MRM) or Selected Reaction Monitoring (SRM) scan.
+   */
+<span class="nc" id="L44">  MRM_SRM,</span>
+
+<span class="nc" id="L46">  /**</span>
+   * Data Independent Acquisition (DIA) scan.
+   */
+<span class="nc" id="L49">  DIA,</span>
+
+<span class="nc" id="L51">  /**</span>
+   * Unknown MS scan type.
+   */
+<span class="nc" id="L54">  UNKNOWN;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>

@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLFileImportMethod.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-spectra-spectrumtypedetection</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.spectra.spectrumtypedetection</a> &gt; <span class="el_source">MzMLFileImportMethod.java</span></div><h1>MzMLFileImportMethod.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.spectra.spectrumtypedetection;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Range;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.MSDKMethod;
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.chromatograms.ChromatogramType;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.MsScanType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.datamodel.rawdata.SeparationType;
+import io.github.msdk.util.MsSpectrumUtil;
+import uk.ac.ebi.jmzml.model.mzml.Spectrum;
+import uk.ac.ebi.jmzml.xml.io.MzMLObjectIterator;
+import uk.ac.ebi.jmzml.xml.io.MzMLUnmarshaller;
+
+/**
+ * This class reads mzML data format using the jmzml library. It generates a RawDataFile object.
+ */
+public class MzMLFileImportMethod implements MSDKMethod&lt;RawDataFile&gt; {
+
+<span class="nc" id="L50">  private final Logger logger = LoggerFactory.getLogger(this.getClass());</span>
+
+  private final @Nonnull File sourceFile;
+
+<span class="nc" id="L54">  private boolean canceled = false;</span>
+
+  private RawDataFile newRawFile;
+<span class="nc" id="L57">  private long totalScans = 0, totalChromatograms = 0, parsedScans, parsedChromatograms;</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param sourceFile a {@link java.io.File} object.
+   */
+<span class="nc" id="L66">  public MzMLFileImportMethod(@Nonnull File sourceFile) {</span>
+<span class="nc" id="L67">    this.sourceFile = sourceFile;</span>
+<span class="nc" id="L68">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public RawDataFile execute() throws MSDKException {
+
+<span class="nc" id="L74">    logger.info(&quot;Started parsing file &quot; + sourceFile);</span>
+
+    MzMLUnmarshaller parser;
+
+    // MzMLUnmarshaller throws IllegalStateException when the mzML file
+    // structure is invalid
+    try {
+<span class="nc" id="L81">      parser = new MzMLUnmarshaller(sourceFile);</span>
+<span class="nc" id="L82">    } catch (Exception e) {</span>
+<span class="nc" id="L83">      throw new MSDKException(e);</span>
+    }
+
+<span class="nc" id="L86">    totalScans = parser.getObjectCountForXpath(&quot;/run/spectrumList/spectrum&quot;);</span>
+<span class="nc" id="L87">    totalChromatograms = parser.getObjectCountForXpath(&quot;/run/chromatogramList/chromatogram&quot;);</span>
+
+    // Prepare data structures
+<span class="nc" id="L90">    List&lt;MsScan&gt; scansList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L91">    List&lt;Chromatogram&gt; chromatogramsList = new ArrayList&lt;&gt;();</span>
+
+    // Create the MzMLRawDataFile object
+<span class="nc" id="L94">    final MzMLRawDataFile newRawFile =</span>
+<span class="nc" id="L95">        new MzMLRawDataFile(sourceFile, parser, scansList, chromatogramsList);</span>
+<span class="nc" id="L96">    this.newRawFile = newRawFile;</span>
+
+    // Create the converter from jmzml data model to our data model
+<span class="nc" id="L99">    final MzMLConverter converter = new MzMLConverter();</span>
+
+<span class="nc bnc" id="L101" title="All 2 branches missed.">    if (totalScans &gt; 0) {</span>
+<span class="nc" id="L102">      MzMLObjectIterator&lt;Spectrum&gt; iterator =</span>
+<span class="nc" id="L103">          parser.unmarshalCollectionFromXpath(&quot;/run/spectrumList/spectrum&quot;, Spectrum.class);</span>
+
+      @Nonnull
+<span class="nc" id="L106">      double mzValues[] = new double[1000];</span>
+      @Nonnull
+<span class="nc" id="L108">      float intensityValues[] = new float[1000];</span>
+
+<span class="nc bnc" id="L110" title="All 2 branches missed.">      while (iterator.hasNext()) {</span>
+
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (canceled)</span>
+<span class="nc" id="L113">          return null;</span>
+
+<span class="nc" id="L115">        Spectrum spectrum = iterator.next();</span>
+
+        // Get spectrum ID
+<span class="nc" id="L118">        String spectrumId = spectrum.getId();</span>
+
+        // Get the scan number
+<span class="nc" id="L121">        Integer scanNumber = converter.extractScanNumber(spectrum);</span>
+
+        // Ignore scans that are not MS, e.g. UV, or scans that have no
+        // ID or number
+<span class="nc bnc" id="L125" title="All 6 branches missed.">        if ((!converter.isMsSpectrum(spectrum)) || (spectrumId == null) || (scanNumber == null)) {</span>
+<span class="nc" id="L126">          parsedScans++;</span>
+<span class="nc" id="L127">          continue;</span>
+        }
+
+        // Get the scan definition
+<span class="nc" id="L131">        String scanDefinition = converter.extractScanDefinition(spectrum);</span>
+
+        // Store the chromatography data
+<span class="nc" id="L134">        Float rt = converter.extractChromatographyData(spectrum);</span>
+
+        // Extract the scan data points, so we can check the m/z range
+        // and detect the spectrum type (profile/centroid)
+<span class="nc" id="L138">        mzValues = MzMLConverter.extractMzValues(spectrum, mzValues);</span>
+<span class="nc" id="L139">        intensityValues = MzMLConverter.extractIntensityValues(spectrum, intensityValues);</span>
+<span class="nc" id="L140">        final Integer numOfDataPoints = spectrum.getDefaultArrayLength();</span>
+
+        // Get the m/z range
+<span class="nc" id="L143">        Range&lt;Double&gt; mzRange = MsSpectrumUtil.getMzRange(mzValues, numOfDataPoints);</span>
+
+        // Get the instrument scanning range
+<span class="nc" id="L146">        Range&lt;Double&gt; scanningRange = null;</span>
+
+        // Get the TIC
+<span class="nc" id="L149">        Float tic = MsSpectrumUtil.getTIC(intensityValues, numOfDataPoints);</span>
+
+        // Auto-detect whether this scan is centroided
+<span class="nc" id="L152">        MsSpectrumType spectrumType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(mzValues,</span>
+<span class="nc" id="L153">            intensityValues, numOfDataPoints);</span>
+
+        // Get the MS scan type
+<span class="nc" id="L156">        MsScanType scanType = converter.extractScanType(spectrum);</span>
+
+        // Get the polarity
+<span class="nc" id="L159">        PolarityType polarity = converter.extractPolarity(spectrum);</span>
+
+        // Get the in-source fragmentation
+<span class="nc" id="L162">        ActivationInfo sourceFragmentation = converter.extractSourceFragmentation(spectrum);</span>
+
+        // Get the in-source fragmentation
+<span class="nc" id="L165">        List&lt;IsolationInfo&gt; isolations = converter.extractIsolations(spectrum);</span>
+
+        // Create a new MsScan instance
+<span class="nc" id="L168">        MzMLMsScan scan = new MzMLMsScan(newRawFile, spectrumId, spectrumType, &quot;&quot;,</span>
+<span class="nc" id="L169">            rt, scanType, mzRange, scanningRange, scanNumber, scanDefinition, tic, polarity,</span>
+<span class="nc" id="L170">            sourceFragmentation, isolations, numOfDataPoints);</span>
+
+        // Add the scan to the final raw data file
+<span class="nc" id="L173">        scansList.add(scan);</span>
+
+<span class="nc" id="L175">        parsedScans++;</span>
+
+      }
+    }
+
+<span class="nc bnc" id="L180" title="All 2 branches missed.">    if (totalChromatograms &gt; 0) {</span>
+<span class="nc" id="L181">      MzMLObjectIterator&lt;uk.ac.ebi.jmzml.model.mzml.Chromatogram&gt; iterator =</span>
+<span class="nc" id="L182">          parser.unmarshalCollectionFromXpath(&quot;/run/chromatogramList/chromatogram&quot;,</span>
+<span class="nc" id="L183">              uk.ac.ebi.jmzml.model.mzml.Chromatogram.class);</span>
+
+<span class="nc" id="L185">      float rtValues[] = new float[1000];</span>
+
+<span class="nc bnc" id="L187" title="All 2 branches missed.">      while (iterator.hasNext()) {</span>
+
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        if (canceled)</span>
+<span class="nc" id="L190">          return null;</span>
+
+<span class="nc" id="L192">        uk.ac.ebi.jmzml.model.mzml.Chromatogram chromatogram = iterator.next();</span>
+
+        // Get the chromatogram id
+<span class="nc" id="L195">        String chromatogramId = chromatogram.getId();</span>
+
+        // Get the chromatogram number
+<span class="nc" id="L198">        Integer chromatogramNumber = chromatogram.getIndex() + 1;</span>
+
+        // Get the separation type
+<span class="nc" id="L201">        SeparationType separationType = converter.extractSeparationType(chromatogram);</span>
+
+        // Get the chromatogram type
+<span class="nc" id="L204">        ChromatogramType chromatogramType = converter.extractChromatogramType(chromatogram);</span>
+
+        // Get the chromatogram m/z value
+<span class="nc" id="L207">        Double mz = converter.extractMz(chromatogram);</span>
+
+<span class="nc" id="L209">        Integer numOfDataPoints = chromatogram.getDefaultArrayLength();</span>
+
+<span class="nc" id="L211">        rtValues = MzMLConverter.extractRtValues(chromatogram, rtValues);</span>
+<span class="nc" id="L212">        Range&lt;Float&gt; rtRange = null;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (numOfDataPoints &gt; 0)</span>
+<span class="nc" id="L214">          rtRange = Range.closed(rtValues[0], rtValues[numOfDataPoints - 1]);</span>
+
+        // Get the in-source fragmentation
+<span class="nc" id="L217">        List&lt;IsolationInfo&gt; isolations = converter.extractIsolations(chromatogram);</span>
+
+        // Create a new Chromatogram instance
+<span class="nc" id="L220">        MzMLChromatogram chrom =</span>
+<span class="nc" id="L221">            new MzMLChromatogram(newRawFile, chromatogramId, chromatogramNumber, separationType, mz,</span>
+<span class="nc" id="L222">                chromatogramType, isolations, numOfDataPoints, rtRange);</span>
+
+        // Add the chromatogram to the final raw data file
+<span class="nc" id="L225">        chromatogramsList.add(chrom);</span>
+
+<span class="nc" id="L227">        parsedChromatograms++;</span>
+
+      }
+    }
+
+<span class="nc" id="L232">    parsedChromatograms = totalChromatograms;</span>
+<span class="nc" id="L233">    logger.info(&quot;Finished importing &quot; + sourceFile + &quot;, parsed &quot; + parsedScans + &quot; scans and &quot;</span>
+<span class="nc" id="L234">        + parsedChromatograms + &quot; chromatograms&quot;);</span>
+
+<span class="nc" id="L236">    return newRawFile;</span>
+
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getFinishedPercentage() {
+<span class="nc bnc" id="L243" title="All 2 branches missed.">    return (totalScans + totalChromatograms) == 0 ? null</span>
+<span class="nc" id="L244">        : (float) (parsedScans + parsedChromatograms) / (totalScans + totalChromatograms);</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public RawDataFile getResult() {
+<span class="nc" id="L251">    return newRawFile;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void cancel() {
+<span class="nc" id="L257">    this.canceled = true;</span>
+<span class="nc" id="L258">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

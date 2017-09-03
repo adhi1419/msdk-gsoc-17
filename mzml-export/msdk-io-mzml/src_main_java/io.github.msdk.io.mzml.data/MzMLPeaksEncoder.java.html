@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLPeaksEncoder.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLPeaksEncoder.java</span></div><h1>MzMLPeaksEncoder.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.zip.Deflater;
+
+import org.apache.commons.codec.binary.Base64;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.io.mzml.util.MSNumpress;
+
+/**
+ * &lt;p&gt;Abstract MzMLPeaksEncoder class.&lt;/p&gt;
+ *
+ */
+<span class="nc" id="L30">public abstract class MzMLPeaksEncoder {</span>
+
+  /**
+   * &lt;p&gt;encodeDouble.&lt;/p&gt;
+   *
+   * @param data an array of double.
+   * @param compression a {@link io.github.msdk.io.mzml.data.MzMLCompressionType} object.
+   * @return an array of byte.
+   * @throws io.github.msdk.MSDKException if any.
+   */
+  public static byte[] encodeDouble(double[] data, MzMLCompressionType compression)
+      throws MSDKException {
+
+<span class="fc" id="L43">    byte[] encodedData = null;</span>
+    int encodedBytes;
+
+    // MSNumpress compression if required
+<span class="pc bpc" id="L47" title="3 of 4 branches missed.">    switch (compression) {</span>
+      case NUMPRESS_LINPRED:
+      case NUMPRESS_LINPRED_ZLIB:
+        // Set encodedData's array to the maximum possible size, truncate it later
+<span class="fc" id="L51">        encodedData = new byte[8 + (data.length * 5)];</span>
+<span class="fc" id="L52">        encodedBytes = MSNumpress.encodeLinear(data, data.length, encodedData,</span>
+<span class="fc" id="L53">            MSNumpress.optimalLinearFixedPoint(data, data.length));</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (encodedBytes &lt; 0)</span>
+<span class="nc" id="L55">          throw new MSDKException(&quot;MSNumpress linear encoding failed&quot;);</span>
+<span class="fc" id="L56">        encodedData = Arrays.copyOf(encodedData, encodedBytes);</span>
+<span class="fc" id="L57">        break;</span>
+      case NUMPRESS_POSINT:
+      case NUMPRESS_POSINT_ZLIB:
+<span class="nc" id="L60">        encodedData = new byte[data.length * 5];</span>
+<span class="nc" id="L61">        encodedBytes = MSNumpress.encodePic(data, data.length, encodedData);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (encodedBytes &lt; 0)</span>
+<span class="nc" id="L63">          throw new MSDKException(&quot;MSNumpress positive integer encoding failed&quot;);</span>
+<span class="nc" id="L64">        encodedData = Arrays.copyOf(encodedData, encodedBytes);</span>
+<span class="nc" id="L65">        break;</span>
+      case NUMPRESS_SHLOGF:
+      case NUMPRESS_SHLOGF_ZLIB:
+<span class="nc" id="L68">        encodedData = new byte[8 + (data.length * 2)];</span>
+<span class="nc" id="L69">        encodedBytes = MSNumpress.encodeSlof(data, data.length, encodedData,</span>
+<span class="nc" id="L70">            MSNumpress.optimalSlofFixedPoint(data, data.length));</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (encodedBytes &lt; 0)</span>
+<span class="nc" id="L72">          throw new MSDKException(&quot;MSNumpress short floating logarithm encoding failed&quot;);</span>
+<span class="nc" id="L73">        encodedData = Arrays.copyOf(encodedData, encodedBytes);</span>
+<span class="nc" id="L74">        break;</span>
+      default:
+<span class="nc" id="L76">        ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);</span>
+<span class="nc" id="L77">        buffer.order(ByteOrder.LITTLE_ENDIAN);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (double d : data) {</span>
+<span class="nc" id="L79">          buffer.putDouble(d);</span>
+        }
+<span class="nc" id="L81">        encodedData = buffer.array();</span>
+<span class="fc" id="L82">        break;</span>
+    }
+
+    // Zlib Compression if necessary
+<span class="fc bfc" id="L86" title="All 2 branches covered.">    switch (compression) {</span>
+      case NUMPRESS_LINPRED_ZLIB:
+      case NUMPRESS_POSINT_ZLIB:
+      case NUMPRESS_SHLOGF_ZLIB:
+      case ZLIB:
+<span class="fc" id="L91">        byte[] tmp = ZlibCompress(encodedData);</span>
+<span class="fc" id="L92">        return Base64.encodeBase64(tmp);</span>
+      default:
+<span class="fc" id="L94">        return Base64.encodeBase64(encodedData);</span>
+    }
+
+  }
+
+  /**
+   * &lt;p&gt;encodeFloat.&lt;/p&gt;
+   *
+   * @param data an array of float.
+   * @param compression a {@link io.github.msdk.io.mzml.data.MzMLCompressionType} object.
+   * @return an array of byte.
+   * @throws io.github.msdk.MSDKException if any.
+   */
+  public static byte[] encodeFloat(float[] data, MzMLCompressionType compression)
+      throws MSDKException {
+
+<span class="fc" id="L110">    byte[] encodedData = null;</span>
+
+    // MSNumpress compression if required
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">    switch (compression) {</span>
+      case NUMPRESS_LINPRED:
+      case NUMPRESS_LINPRED_ZLIB:
+      case NUMPRESS_POSINT:
+      case NUMPRESS_POSINT_ZLIB:
+      case NUMPRESS_SHLOGF:
+      case NUMPRESS_SHLOGF_ZLIB:
+<span class="nc" id="L120">        throw new MSDKException(&quot;MSNumpress compression not supported for float values&quot;);</span>
+      default:
+<span class="fc" id="L122">        ByteBuffer buffer = ByteBuffer.allocate(data.length * 8);</span>
+<span class="fc" id="L123">        buffer.order(ByteOrder.LITTLE_ENDIAN);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (float f : data) {</span>
+<span class="fc" id="L125">          buffer.putFloat(f);</span>
+        }
+<span class="fc" id="L127">        encodedData = buffer.array();</span>
+<span class="fc" id="L128">        break;</span>
+    }
+
+    // Zlib Compression if necessary
+<span class="fc bfc" id="L132" title="All 2 branches covered.">    switch (compression) {</span>
+      case ZLIB:
+<span class="fc" id="L134">        byte[] tmp = ZlibCompress(encodedData);</span>
+<span class="fc" id="L135">        return Base64.encodeBase64(tmp);</span>
+      default:
+<span class="fc" id="L137">        return Base64.encodeBase64(encodedData);</span>
+    }
+
+  }
+
+  /**
+   * Compressed source data using the Deflate algorithm.
+   * 
+   * @param uncompressedData Data to be compressed
+   * @return Compressed data
+   */
+  private static byte[] ZlibCompress(byte[] uncompressedData) {
+<span class="fc" id="L149">    byte[] data = null; // Decompress the data</span>
+
+    // create a temporary byte array big enough to hold the compressed data
+    // with the worst compression (the length of the initial (uncompressed) data)
+    // EDIT: if it turns out this byte array was not big enough, then double its size and try again.
+<span class="fc" id="L154">    byte[] temp = new byte[uncompressedData.length / 2];</span>
+<span class="fc" id="L155">    int compressedBytes = temp.length;</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">    while (compressedBytes == temp.length) {</span>
+      // compress
+<span class="fc" id="L158">      temp = new byte[temp.length * 2];</span>
+<span class="fc" id="L159">      Deflater compresser = new Deflater();</span>
+<span class="fc" id="L160">      compresser.setInput(uncompressedData);</span>
+<span class="fc" id="L161">      compresser.finish();</span>
+<span class="fc" id="L162">      compressedBytes = compresser.deflate(temp);</span>
+    }
+
+    // create a new array with the size of the compressed data (compressedBytes)
+<span class="fc" id="L166">    data = new byte[compressedBytes];</span>
+<span class="fc" id="L167">    System.arraycopy(temp, 0, data, 0, compressedBytes);</span>
+
+<span class="fc" id="L169">    return data;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</div></body></html>

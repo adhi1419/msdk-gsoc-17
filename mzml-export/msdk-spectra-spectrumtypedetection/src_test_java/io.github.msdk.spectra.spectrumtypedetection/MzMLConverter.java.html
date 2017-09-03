@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLConverter.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-spectra-spectrumtypedetection</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.spectra.spectrumtypedetection</a> &gt; <span class="el_source">MzMLConverter.java</span></div><h1>MzMLConverter.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.spectra.spectrumtypedetection;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.Range;
+
+import io.github.msdk.datamodel.chromatograms.ChromatogramType;
+import io.github.msdk.datamodel.impl.SimpleActivationInfo;
+import io.github.msdk.datamodel.impl.SimpleIsolationInfo;
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.ActivationType;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScanType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.SeparationType;
+import uk.ac.ebi.jmzml.model.mzml.BinaryDataArray;
+import uk.ac.ebi.jmzml.model.mzml.BinaryDataArrayList;
+import uk.ac.ebi.jmzml.model.mzml.CVParam;
+import uk.ac.ebi.jmzml.model.mzml.ParamGroup;
+import uk.ac.ebi.jmzml.model.mzml.Precursor;
+import uk.ac.ebi.jmzml.model.mzml.PrecursorList;
+import uk.ac.ebi.jmzml.model.mzml.Scan;
+import uk.ac.ebi.jmzml.model.mzml.ScanList;
+import uk.ac.ebi.jmzml.model.mzml.SelectedIonList;
+import uk.ac.ebi.jmzml.model.mzml.Spectrum;
+
+/**
+ * This class provides conversions between the jmzml data model and the MSDK data model
+ */
+<span class="nc" id="L53">class MzMLConverter {</span>
+
+<span class="nc" id="L55">  private int lastScanNumber = 0;</span>
+
+<span class="nc" id="L57">  private Map&lt;String, Integer&gt; scanIdTable = new Hashtable&lt;String, Integer&gt;();</span>
+
+  @Nonnull
+  Integer extractScanNumber(Spectrum spectrum) {
+
+<span class="nc" id="L62">    String spectrumId = spectrum.getId();</span>
+
+<span class="nc" id="L64">    Integer storedScanNumber = scanIdTable.get(spectrumId);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">    if (storedScanNumber != null)</span>
+<span class="nc" id="L66">      return storedScanNumber;</span>
+
+<span class="nc" id="L68">    final Pattern pattern = Pattern.compile(&quot;scan=([0-9]+)&quot;);</span>
+<span class="nc" id="L69">    final Matcher matcher = pattern.matcher(spectrumId);</span>
+<span class="nc" id="L70">    boolean scanNumberFound = matcher.find();</span>
+
+    // Some vendors include scan=XX in the ID, some don't, such as
+    // mzML converted from WIFF files. See the definition of nativeID in
+    // http://psidev.cvs.sourceforge.net/viewvc/psidev/psi/psi-ms/mzML/controlledVocabulary/psi-ms.obo
+<span class="nc bnc" id="L75" title="All 2 branches missed.">    if (scanNumberFound) {</span>
+<span class="nc" id="L76">      Integer scanNumber = Integer.parseInt(matcher.group(1));</span>
+<span class="nc" id="L77">      lastScanNumber = scanNumber;</span>
+<span class="nc" id="L78">      scanIdTable.put(spectrumId, scanNumber);</span>
+<span class="nc" id="L79">      return scanNumber;</span>
+    }
+
+<span class="nc" id="L82">    Integer scanNumber = lastScanNumber + 1;</span>
+<span class="nc" id="L83">    lastScanNumber++;</span>
+<span class="nc" id="L84">    scanIdTable.put(spectrumId, scanNumber);</span>
+<span class="nc" id="L85">    return scanNumber;</span>
+  }
+
+  @Nonnull
+  Boolean isMsSpectrum(Spectrum spectrum) {
+
+<span class="nc" id="L91">    String value = extractCVValue(spectrum.getCvParam(), MzMLCV.cvUVSpectrum);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">    if (value != null)</span>
+<span class="nc" id="L93">      return false;</span>
+
+<span class="nc" id="L95">    value = extractCVValue(spectrum.getCvParam(), MzMLCV.cvMS1Spectrum);</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    if (value != null)</span>
+<span class="nc" id="L97">      return true;</span>
+
+    // By default, let's assume unidentified spectra are MS spectra
+<span class="nc" id="L100">    return true;</span>
+  }
+
+  @Nonnull
+  Integer extractMsLevel(Spectrum spectrum) {
+<span class="nc" id="L105">    Integer msLevel = 1;</span>
+<span class="nc" id="L106">    String value = extractCVValue(spectrum.getCvParam(), MzMLCV.cvMSLevel);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    if (!Strings.isNullOrEmpty(value))</span>
+<span class="nc" id="L108">      msLevel = Integer.parseInt(value);</span>
+<span class="nc" id="L109">    return msLevel;</span>
+  }
+
+  @Nullable
+  Float extractChromatographyData(Spectrum spectrum) {
+
+<span class="nc" id="L115">    ScanList scanListElement = spectrum.getScanList();</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">    if (scanListElement == null)</span>
+<span class="nc" id="L117">      return null;</span>
+<span class="nc" id="L118">    List&lt;Scan&gt; scanElements = scanListElement.getScan();</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">    if (scanElements == null)</span>
+<span class="nc" id="L120">      return null;</span>
+
+<span class="nc bnc" id="L122" title="All 2 branches missed.">    for (Scan scan : scanElements) {</span>
+<span class="nc" id="L123">      List&lt;CVParam&gt; cvParams = scan.getCvParam();</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">      if (cvParams == null)</span>
+<span class="nc" id="L125">        continue;</span>
+
+<span class="nc bnc" id="L127" title="All 2 branches missed.">      for (CVParam param : cvParams) {</span>
+<span class="nc" id="L128">        String accession = param.getAccession();</span>
+<span class="nc" id="L129">        String unitAccession = param.getUnitAccession();</span>
+<span class="nc" id="L130">        String value = param.getValue();</span>
+<span class="nc bnc" id="L131" title="All 4 branches missed.">        if ((accession == null) || (value == null))</span>
+<span class="nc" id="L132">          continue;</span>
+
+        // Retention time (actually &quot;Scan start time&quot;) MS:1000016
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (accession.equals(MzMLCV.cvScanStartTime)) {</span>
+          try {
+            float retentionTime;
+<span class="nc bnc" id="L138" title="All 4 branches missed.">            if ((unitAccession == null) || (unitAccession.equals(MzMLCV.cvUnitsMin1))</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                || unitAccession.equals(MzMLCV.cvUnitsMin2)) {</span>
+              // Minutes
+<span class="nc" id="L141">              retentionTime = Float.parseFloat(value) * 60f;</span>
+<span class="nc" id="L142">            } else {</span>
+              // Seconds
+<span class="nc" id="L144">              retentionTime = Float.parseFloat(value);</span>
+            }
+<span class="nc" id="L146">            return retentionTime;</span>
+<span class="nc" id="L147">          } catch (Exception e) {</span>
+            // Ignore incorrectly formatted numbers, just dump the
+            // exception
+<span class="nc" id="L150">            e.printStackTrace();</span>
+          }
+
+        }
+      }
+    }
+
+<span class="nc" id="L157">    return null;</span>
+  }
+
+
+  @Nonnull
+  String extractScanDefinition(Spectrum spectrum) {
+
+<span class="nc" id="L164">    String scanFilter = extractCVValue(spectrum.getCvParam(), MzMLCV.cvScanFilterString);</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">    if (!Strings.isNullOrEmpty(scanFilter))</span>
+<span class="nc" id="L166">      return scanFilter;</span>
+
+<span class="nc" id="L168">    ScanList scanListElement = spectrum.getScanList();</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">    if (scanListElement != null) {</span>
+<span class="nc" id="L170">      List&lt;Scan&gt; scanElements = scanListElement.getScan();</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">      if (scanElements != null) {</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        for (Scan scan : scanElements) {</span>
+<span class="nc" id="L173">          scanFilter = extractCVValue(scan.getCvParam(), MzMLCV.cvScanFilterString);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">          if (!Strings.isNullOrEmpty(scanFilter))</span>
+<span class="nc" id="L175">            return scanFilter;</span>
+        }
+      }
+    }
+<span class="nc" id="L179">    return spectrum.getId();</span>
+  }
+
+  @Nonnull
+  MsScanType extractScanType(Spectrum spectrum) {
+<span class="nc" id="L184">    return MsScanType.UNKNOWN;</span>
+  }
+
+  @Nonnull
+  PolarityType extractPolarity(Spectrum spectrum) {
+
+<span class="nc bnc" id="L190" title="All 2 branches missed.">    if (haveCVParam(spectrum.getCvParam(), MzMLCV.cvPolarityPositive))</span>
+<span class="nc" id="L191">      return PolarityType.POSITIVE;</span>
+
+<span class="nc bnc" id="L193" title="All 2 branches missed.">    if (haveCVParam(spectrum.getCvParam(), MzMLCV.cvPolarityNegative))</span>
+<span class="nc" id="L194">      return PolarityType.NEGATIVE;</span>
+
+<span class="nc" id="L196">    ScanList scanListElement = spectrum.getScanList();</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">    if (scanListElement != null) {</span>
+<span class="nc" id="L198">      List&lt;Scan&gt; scanElements = scanListElement.getScan();</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">      if (scanElements != null) {</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        for (Scan scan : scanElements) {</span>
+
+<span class="nc bnc" id="L202" title="All 2 branches missed.">          if (haveCVParam(scan.getCvParam(), MzMLCV.cvPolarityPositive))</span>
+<span class="nc" id="L203">            return PolarityType.POSITIVE;</span>
+
+<span class="nc bnc" id="L205" title="All 2 branches missed.">          if (haveCVParam(scan.getCvParam(), MzMLCV.cvPolarityNegative))</span>
+<span class="nc" id="L206">            return PolarityType.NEGATIVE;</span>
+
+        }
+      }
+    }
+<span class="nc" id="L211">    return PolarityType.UNKNOWN;</span>
+
+  }
+
+  @Nullable
+  ActivationInfo extractSourceFragmentation(Spectrum spectrum) {
+<span class="nc" id="L217">    return null;</span>
+  }
+
+
+  @Nonnull
+  List&lt;IsolationInfo&gt; extractIsolations(Spectrum spectrum) {
+<span class="nc" id="L223">    PrecursorList precursorListElement = spectrum.getPrecursorList();</span>
+<span class="nc bnc" id="L224" title="All 4 branches missed.">    if ((precursorListElement == null) || (precursorListElement.getCount().equals(0)))</span>
+<span class="nc" id="L225">      return Collections.emptyList();</span>
+
+<span class="nc" id="L227">    List&lt;IsolationInfo&gt; isolations = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L229">    List&lt;Precursor&gt; precursorList = precursorListElement.getPrecursor();</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">    for (Precursor parent : precursorList) {</span>
+
+<span class="nc" id="L232">      Double precursorMz = null;</span>
+<span class="nc" id="L233">      Double isolationWindowTarget = null;</span>
+<span class="nc" id="L234">      Double isolationWindowLower = null;</span>
+<span class="nc" id="L235">      Double isolationWindowUpper = null;</span>
+<span class="nc" id="L236">      Integer precursorCharge = null;</span>
+
+<span class="nc" id="L238">      SelectedIonList selectedIonListElement = parent.getSelectedIonList();</span>
+<span class="nc bnc" id="L239" title="All 4 branches missed.">      if ((selectedIonListElement == null) || (selectedIonListElement.getCount().equals(0)))</span>
+<span class="nc" id="L240">        return Collections.emptyList();</span>
+<span class="nc" id="L241">      List&lt;ParamGroup&gt; selectedIonParams = selectedIonListElement.getSelectedIon();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">      if (selectedIonParams == null)</span>
+<span class="nc" id="L243">        continue;</span>
+
+<span class="nc bnc" id="L245" title="All 2 branches missed.">      for (ParamGroup pg : selectedIonParams) {</span>
+        // cvMz is sometimes used is used in mzML 1.0 files
+<span class="nc" id="L247">        String cvVal = extractCVValue(pg, MzMLCV.cvMz);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L249">          precursorMz = Double.parseDouble(cvVal);</span>
+
+<span class="nc" id="L251">        cvVal = extractCVValue(pg, MzMLCV.cvPrecursorMz);</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L253">          precursorMz = Double.parseDouble(cvVal);</span>
+
+<span class="nc" id="L255">        cvVal = extractCVValue(pg, MzMLCV.cvChargeState);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">        if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L257">          precursorCharge = Integer.parseInt(cvVal);</span>
+
+      }
+
+<span class="nc" id="L261">      String cvVal =</span>
+<span class="nc" id="L262">          extractCVValue(parent.getIsolationWindow(), MzMLCV.cvIsolationWindowLowerOffset);</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L264">        isolationWindowLower = Double.parseDouble(cvVal);</span>
+
+<span class="nc" id="L266">      cvVal = extractCVValue(parent.getIsolationWindow(), MzMLCV.cvIsolationWindowUpperOffset);</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L268">        isolationWindowUpper = Double.parseDouble(cvVal);</span>
+
+<span class="nc" id="L270">      cvVal = extractCVValue(parent.getIsolationWindow(), MzMLCV.cvIsolationWindowTarget);</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L272">        isolationWindowTarget = Double.parseDouble(cvVal);</span>
+
+<span class="nc bnc" id="L274" title="All 2 branches missed.">      if (precursorMz != null) {</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        if (isolationWindowTarget == null)</span>
+<span class="nc" id="L276">          isolationWindowTarget = precursorMz;</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (isolationWindowLower == null)</span>
+<span class="nc" id="L278">          isolationWindowLower = 0.5;</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        if (isolationWindowUpper == null)</span>
+<span class="nc" id="L280">          isolationWindowUpper = 0.5;</span>
+<span class="nc" id="L281">        Range&lt;Double&gt; isolationRange = Range.closed(isolationWindowTarget - isolationWindowLower,</span>
+<span class="nc" id="L282">            isolationWindowTarget + isolationWindowUpper);</span>
+<span class="nc" id="L283">        IsolationInfo isolation = new SimpleIsolationInfo(isolationRange, null,</span>
+<span class="nc" id="L284">            precursorMz, precursorCharge, null);</span>
+<span class="nc" id="L285">        isolations.add(isolation);</span>
+      }
+    }
+
+<span class="nc" id="L289">    return Collections.unmodifiableList(isolations);</span>
+  }
+
+  @Nonnull
+  SeparationType extractSeparationType(Spectrum spectrum) {
+<span class="nc" id="L294">    return SeparationType.UNKNOWN;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * extractSeparationType.
+   * &lt;/p&gt;
+   *
+   * @param chromatogram a {@link uk.ac.ebi.jmzml.model.mzml.Chromatogram} object.
+   * @return a {@link io.github.msdk.datamodel.rawdata.SeparationType} object.
+   */
+  @Nonnull
+  public SeparationType extractSeparationType(
+      uk.ac.ebi.jmzml.model.mzml.Chromatogram chromatogram) {
+<span class="nc" id="L308">    return SeparationType.UNKNOWN;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * extractChromatogramType.
+   * &lt;/p&gt;
+   *
+   * @param chromatogram a {@link uk.ac.ebi.jmzml.model.mzml.Chromatogram} object.
+   * @return a {@link io.github.msdk.datamodel.chromatograms.ChromatogramType} object.
+   */
+  @Nonnull
+  public ChromatogramType extractChromatogramType(
+      uk.ac.ebi.jmzml.model.mzml.Chromatogram chromatogram) {
+
+<span class="nc bnc" id="L323" title="All 2 branches missed.">    if (haveCVParam(chromatogram.getCvParam(), MzMLCV.cvChromatogramTIC))</span>
+<span class="nc" id="L324">      return ChromatogramType.TIC;</span>
+
+<span class="nc bnc" id="L326" title="All 2 branches missed.">    if (haveCVParam(chromatogram.getCvParam(), MzMLCV.cvChromatogramMRM_SRM))</span>
+<span class="nc" id="L327">      return ChromatogramType.MRM_SRM;</span>
+
+<span class="nc bnc" id="L329" title="All 2 branches missed.">    if (haveCVParam(chromatogram.getCvParam(), MzMLCV.cvChromatogramSIC))</span>
+<span class="nc" id="L330">      return ChromatogramType.SIC;</span>
+
+<span class="nc bnc" id="L332" title="All 2 branches missed.">    if (haveCVParam(chromatogram.getCvParam(), MzMLCV.cvChromatogramBPC))</span>
+<span class="nc" id="L333">      return ChromatogramType.BPC;</span>
+
+<span class="nc" id="L335">    return ChromatogramType.UNKNOWN;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * extractIsolations.
+   * &lt;/p&gt;
+   *
+   * @param chromatogram a {@link uk.ac.ebi.jmzml.model.mzml.Chromatogram} object.
+   * @return a {@link java.util.List} object.
+   */
+
+  @Nonnull
+  public List&lt;IsolationInfo&gt; extractIsolations(
+      uk.ac.ebi.jmzml.model.mzml.Chromatogram chromatogram) {
+<span class="nc bnc" id="L350" title="All 2 branches missed.">    if (extractChromatogramType(chromatogram) == ChromatogramType.MRM_SRM) {</span>
+<span class="nc" id="L351">      Double precursorIsolationMz = null, productIsolationMz = null,</span>
+<span class="nc" id="L352">          precursorActivationEnergy = null;</span>
+<span class="nc" id="L353">      ActivationType precursorActivation = ActivationType.UNKNOWN;</span>
+<span class="nc" id="L354">      ActivationInfo activationInfo = null;</span>
+
+      // Precursor isolation window
+<span class="nc" id="L357">      String cvVal = extractCVValue(chromatogram.getPrecursor().getIsolationWindow().getCvParam(),</span>
+<span class="nc" id="L358">          MzMLCV.cvIsolationWindowTarget);</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L360">        precursorIsolationMz = Double.parseDouble(cvVal);</span>
+
+      // Precursor activation
+<span class="nc" id="L363">      if (haveCVParam(chromatogram.getPrecursor().getActivation().getCvParam(),</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">          MzMLCV.cvActivationCID))</span>
+<span class="nc" id="L365">        precursorActivation = ActivationType.CID;</span>
+
+<span class="nc" id="L367">      cvVal = extractCVValue(chromatogram.getPrecursor().getActivation().getCvParam(),</span>
+<span class="nc" id="L368">          MzMLCV.cvActivationEnergy);</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L370">        precursorActivationEnergy = Double.parseDouble(cvVal);</span>
+
+      // Product isolation window
+<span class="nc" id="L373">      cvVal = extractCVValue(chromatogram.getProduct().getIsolationWindow().getCvParam(),</span>
+<span class="nc" id="L374">          MzMLCV.cvIsolationWindowTarget);</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">      if (!Strings.isNullOrEmpty(cvVal))</span>
+<span class="nc" id="L376">        productIsolationMz = Double.parseDouble(cvVal);</span>
+
+<span class="nc bnc" id="L378" title="All 2 branches missed.">      if (precursorActivationEnergy != null) {</span>
+<span class="nc" id="L379">        activationInfo =</span>
+<span class="nc" id="L380">            new SimpleActivationInfo(precursorActivationEnergy, precursorActivation);</span>
+      }
+
+<span class="nc" id="L383">      List&lt;IsolationInfo&gt; isolations = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L384">      IsolationInfo isolationInfo = null;</span>
+
+<span class="nc bnc" id="L386" title="All 2 branches missed.">      if (precursorIsolationMz != null) {</span>
+<span class="nc" id="L387">        isolationInfo = new SimpleIsolationInfo(Range.singleton(precursorIsolationMz),</span>
+<span class="nc" id="L388">            null, precursorIsolationMz, null, activationInfo);</span>
+<span class="nc" id="L389">        isolations.add(isolationInfo);</span>
+      }
+
+<span class="nc bnc" id="L392" title="All 2 branches missed.">      if (productIsolationMz != null) {</span>
+<span class="nc" id="L393">        isolationInfo = new SimpleIsolationInfo(Range.singleton(productIsolationMz),</span>
+<span class="nc" id="L394">            null, productIsolationMz, null, null);</span>
+<span class="nc" id="L395">        isolations.add(isolationInfo);</span>
+      }
+
+<span class="nc" id="L398">      return Collections.unmodifiableList(isolations);</span>
+    }
+
+<span class="nc" id="L401">    return Collections.emptyList();</span>
+
+  }
+
+  static @Nonnull double[] extractMzValues(Spectrum spectrum, @Nullable double[] array) {
+
+<span class="nc" id="L407">    BinaryDataArrayList dataList = spectrum.getBinaryDataArrayList();</span>
+
+<span class="nc bnc" id="L409" title="All 4 branches missed.">    if ((dataList == null) || (dataList.getCount().equals(0)))</span>
+<span class="nc" id="L410">      return new double[0];</span>
+
+    // Obtain the data arrays from spectrum
+<span class="nc" id="L413">    final BinaryDataArray mzArray = dataList.getBinaryDataArray().get(0);</span>
+<span class="nc" id="L414">    final Number mzValues[] = mzArray.getBinaryDataAsNumberArray();</span>
+
+    // Allocate space for the data points
+<span class="nc bnc" id="L417" title="All 4 branches missed.">    if ((array == null) || (array.length &lt; mzValues.length))</span>
+<span class="nc" id="L418">      array = new double[mzValues.length];</span>
+
+    // Copy the actual data point values
+<span class="nc bnc" id="L421" title="All 2 branches missed.">    for (int i = 0; i &lt; mzValues.length; i++) {</span>
+<span class="nc" id="L422">      array[i] = mzValues[i].doubleValue();</span>
+    }
+
+<span class="nc" id="L425">    return array;</span>
+  }
+
+  static @Nonnull float[] extractIntensityValues(Spectrum spectrum, @Nullable float[] array) {
+
+<span class="nc" id="L430">    BinaryDataArrayList dataList = spectrum.getBinaryDataArrayList();</span>
+
+<span class="nc bnc" id="L432" title="All 4 branches missed.">    if ((dataList == null) || (dataList.getCount().equals(0)))</span>
+<span class="nc" id="L433">      return new float[0];</span>
+
+    // Obtain the data arrays from spectrum
+<span class="nc" id="L436">    final BinaryDataArray intensityArray = dataList.getBinaryDataArray().get(1);</span>
+<span class="nc" id="L437">    final Number intensityValues[] = intensityArray.getBinaryDataAsNumberArray();</span>
+
+    // Allocate space for the data points
+<span class="nc bnc" id="L440" title="All 4 branches missed.">    if ((array == null) || (array.length &lt; intensityValues.length))</span>
+<span class="nc" id="L441">      array = new float[intensityValues.length];</span>
+
+    // Copy the actual data point values
+<span class="nc bnc" id="L444" title="All 2 branches missed.">    for (int i = 0; i &lt; intensityValues.length; i++) {</span>
+<span class="nc" id="L445">      array[i] = intensityValues[i].floatValue();</span>
+    }
+
+<span class="nc" id="L448">    return array;</span>
+
+  }
+
+  static @Nonnull float[] extractRtValues(
+      uk.ac.ebi.jmzml.model.mzml.Chromatogram jmzChromatogram,
+      @Nullable float[] array) {
+
+<span class="nc" id="L456">    BinaryDataArrayList dataList = jmzChromatogram.getBinaryDataArrayList();</span>
+
+<span class="nc bnc" id="L458" title="All 4 branches missed.">    if ((dataList == null) || (dataList.getCount().equals(0)))</span>
+<span class="nc" id="L459">      return new float[0];</span>
+
+    // Obtain the data arrays from chromatogram
+<span class="nc" id="L462">    final BinaryDataArray rtArray = dataList.getBinaryDataArray().get(0);</span>
+<span class="nc" id="L463">    final Number rtValues[] = rtArray.getBinaryDataAsNumberArray();</span>
+
+    // Allocate space for the data points
+<span class="nc bnc" id="L466" title="All 4 branches missed.">    if ((array == null) || (array.length &lt; rtValues.length))</span>
+<span class="nc" id="L467">      array = new float[rtValues.length];</span>
+
+    // Copy the actual data point values
+<span class="nc bnc" id="L470" title="All 2 branches missed.">    for (int i = 0; i &lt; rtValues.length; i++) {</span>
+<span class="nc" id="L471">      final float rt = rtValues[i].floatValue();</span>
+<span class="nc" id="L472">      array[i] = rt;</span>
+    }
+
+<span class="nc" id="L475">    return array;</span>
+
+  }
+
+  static @Nonnull float[] extractIntensityValues(
+      uk.ac.ebi.jmzml.model.mzml.Chromatogram jmzChromatogram, @Nullable float[] array) {
+
+<span class="nc" id="L482">    BinaryDataArrayList dataList = jmzChromatogram.getBinaryDataArrayList();</span>
+
+<span class="nc bnc" id="L484" title="All 4 branches missed.">    if ((dataList == null) || (dataList.getCount().equals(0)))</span>
+<span class="nc" id="L485">      return new float[0];</span>
+
+    // Obtain the data arrays from chromatogram
+<span class="nc" id="L488">    final BinaryDataArray intensityArray = dataList.getBinaryDataArray().get(1);</span>
+<span class="nc" id="L489">    final Number intensityValues[] = intensityArray.getBinaryDataAsNumberArray();</span>
+
+    // Allocate space for the data points
+<span class="nc bnc" id="L492" title="All 4 branches missed.">    if ((array == null) || (array.length &lt; intensityValues.length))</span>
+<span class="nc" id="L493">      array = new float[intensityValues.length];</span>
+
+    // Copy the actual data point values
+<span class="nc bnc" id="L496" title="All 2 branches missed.">    for (int i = 0; i &lt; intensityValues.length; i++) {</span>
+<span class="nc" id="L497">      array[i] = intensityValues[i].floatValue();</span>
+    }
+
+<span class="nc" id="L500">    return array;</span>
+
+  }
+
+  @Nullable
+  Double extractMz(uk.ac.ebi.jmzml.model.mzml.Chromatogram jmzChromatogram) {
+<span class="nc" id="L506">    return null;</span>
+  }
+
+  private boolean haveCVParam(@Nullable List&lt;CVParam&gt; cvParams, @Nonnull String cvParam) {
+<span class="nc bnc" id="L510" title="All 2 branches missed.">    if (cvParams == null)</span>
+<span class="nc" id="L511">      return false;</span>
+<span class="nc bnc" id="L512" title="All 2 branches missed.">    for (CVParam param : cvParams) {</span>
+<span class="nc" id="L513">      String accession = param.getAccession();</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">      if (accession == null)</span>
+<span class="nc" id="L515">        continue;</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">      if (accession.equals(cvParam)) {</span>
+<span class="nc" id="L517">        return true;</span>
+      }
+    }
+<span class="nc" id="L520">    return false;</span>
+  }
+
+  private @Nullable String extractCVValue(@Nullable ParamGroup pg, @Nonnull String cvParam) {
+<span class="nc bnc" id="L524" title="All 2 branches missed.">    if (pg == null)</span>
+<span class="nc" id="L525">      return null;</span>
+<span class="nc" id="L526">    return extractCVValue(pg.getCvParam(), cvParam);</span>
+  }
+
+  private @Nullable String extractCVValue(@Nullable List&lt;CVParam&gt; cvParams,
+      @Nonnull String cvParam) {
+<span class="nc bnc" id="L531" title="All 2 branches missed.">    if (cvParams == null)</span>
+<span class="nc" id="L532">      return null;</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">    for (CVParam param : cvParams) {</span>
+<span class="nc" id="L534">      String accession = param.getAccession();</span>
+<span class="nc bnc" id="L535" title="All 2 branches missed.">      if (accession == null)</span>
+<span class="nc" id="L536">        continue;</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">      if (accession.equals(cvParam)) {</span>
+<span class="nc" id="L538">        return param.getValue();</span>
+      }
+    }
+<span class="nc" id="L541">    return null;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</div></body></html>

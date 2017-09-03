@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MsSpectrumUtil.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.util</a> &gt; <span class="el_source">MsSpectrumUtil.java</span></div><h1>MsSpectrumUtil.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.util;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Range;
+
+import io.github.msdk.datamodel.msspectra.MsSpectrum;
+
+/**
+ * &lt;p&gt;
+ * MsSpectrumUtil class.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L29">public class MsSpectrumUtil {</span>
+
+  /**
+   * Returns the m/z range of given data points. Can return null if the data point list is empty.
+   *
+   * @return a {@link com.google.common.collect.Range} object.
+   * @param mzValues an array of double.
+   * @param size a {@link java.lang.Integer} object.
+   */
+  @Nullable
+  public static Range&lt;Double&gt; getMzRange(@Nonnull double mzValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="fc" id="L42">    Preconditions.checkNotNull(mzValues);</span>
+<span class="fc" id="L43">    Preconditions.checkNotNull(size);</span>
+<span class="fc" id="L44">    Preconditions.checkPositionIndex(size, mzValues.length);</span>
+
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">    if (size == 0)</span>
+<span class="nc" id="L47">      return null;</span>
+
+<span class="fc" id="L49">    double min = mzValues[0];</span>
+<span class="fc" id="L50">    double max = mzValues[size - 1];</span>
+<span class="fc" id="L51">    return Range.closed(min, max);</span>
+  }
+
+  /**
+   * Calculates the total ion current (=sum of all intensity values)
+   *
+   * @return a {@link java.lang.Float} object.
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   */
+  public static @Nonnull Float getTIC(@Nonnull float intensityValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="fc" id="L64">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="fc" id="L65">    Preconditions.checkNotNull(size);</span>
+<span class="fc" id="L66">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="fc" id="L68">    float tic = 0f;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L70">      tic += intensityValues[i];</span>
+    }
+<span class="fc" id="L72">    return tic;</span>
+  }
+
+  /**
+   * Calculates the total ion current (=sum of all intensity values)
+   *
+   * @return a {@link java.lang.Float} object.
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   * @param mzValues an array of double.
+   * @param mzRange a {@link com.google.common.collect.Range} object.
+   */
+  public static @Nonnull Float getTIC(@Nonnull double mzValues[], @Nonnull float intensityValues[],
+      @Nonnull Integer size, @Nonnull Range&lt;Double&gt; mzRange) {
+
+    // Parameter check
+<span class="nc" id="L88">    Preconditions.checkNotNull(mzValues);</span>
+<span class="nc" id="L89">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L90">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L91">    Preconditions.checkPositionIndex(size, mzValues.length);</span>
+<span class="nc" id="L92">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+<span class="nc" id="L93">    Preconditions.checkNotNull(mzRange);</span>
+
+<span class="nc" id="L95">    float tic = 0f;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">      if (mzRange.contains(mzValues[i]))</span>
+<span class="nc" id="L98">        tic += intensityValues[i];</span>
+    }
+<span class="nc" id="L100">    return tic;</span>
+  }
+
+  /**
+   * Returns the highest intensity value. Returns 0 if the list has no data points.
+   *
+   * @return a {@link java.lang.Float} object.
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   */
+  public static @Nonnull Float getMaxIntensity(@Nonnull float intensityValues[],
+      @Nonnull Integer size) {
+
+    // Parameter check
+<span class="fc" id="L114">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="fc" id="L115">    Preconditions.checkNotNull(size);</span>
+<span class="fc" id="L116">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="fc" id="L118">    Integer topIndex = getBasePeakIndex(intensityValues, size);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">    if (topIndex == null)</span>
+<span class="nc" id="L120">      return 0f;</span>
+<span class="fc" id="L121">    return intensityValues[topIndex];</span>
+  }
+
+  /**
+   * Returns the highest intensity value. Returns 0 if the list has no data points.
+   *
+   * @return a {@link java.lang.Float} object.
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   * @param mzValues an array of double.
+   * @param mzRange a {@link com.google.common.collect.Range} object.
+   */
+  public static @Nonnull Float getMaxIntensity(@Nonnull double mzValues[],
+      @Nonnull float intensityValues[], @Nonnull Integer size, @Nonnull Range&lt;Double&gt; mzRange) {
+
+    // Parameter check
+<span class="nc" id="L137">    Preconditions.checkNotNull(mzValues);</span>
+<span class="nc" id="L138">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L139">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L140">    Preconditions.checkPositionIndex(size, mzValues.length);</span>
+<span class="nc" id="L141">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+<span class="nc" id="L142">    Preconditions.checkNotNull(mzRange);</span>
+
+<span class="nc" id="L144">    Integer topIndex = getBasePeakIndex(mzValues, intensityValues, size, mzRange);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">    if (topIndex == null)</span>
+<span class="nc" id="L146">      return 0f;</span>
+<span class="nc" id="L147">    return intensityValues[topIndex];</span>
+  }
+
+  /**
+   * Returns the index of the highest intensity value. Returns null if the list has no data points.
+   *
+   * @return a {@link java.lang.Integer} object.
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   */
+  public static @Nullable Integer getBasePeakIndex(@Nonnull float intensityValues[],
+      @Nonnull Integer size) {
+
+    // Parameter check
+<span class="fc" id="L161">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="fc" id="L162">    Preconditions.checkNotNull(size);</span>
+<span class="fc" id="L163">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="fc" id="L165">    Integer topIndex = null;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="fc bfc" id="L167" title="All 4 branches covered.">      if ((topIndex == null) || ((intensityValues[i] &gt; intensityValues[topIndex])))</span>
+<span class="fc" id="L168">        topIndex = i;</span>
+    }
+<span class="fc" id="L170">    return topIndex;</span>
+  }
+
+  /**
+   * Returns the index of the highest intensity value. Returns null if the list has no data points
+   * or if no data point was found within the mz range.
+   *
+   * @param mzRange a {@link com.google.common.collect.Range} object.
+   * @return a {@link java.lang.Integer} object.
+   * @param mzValues an array of double.
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   */
+  public static @Nullable Integer getBasePeakIndex(@Nonnull double mzValues[],
+      @Nonnull float intensityValues[], @Nonnull Integer size, @Nonnull Range&lt;Double&gt; mzRange) {
+
+    // Parameter check
+<span class="nc" id="L187">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L188">    Preconditions.checkNotNull(mzValues);</span>
+<span class="nc" id="L189">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L190">    Preconditions.checkPositionIndex(size, mzValues.length);</span>
+<span class="nc" id="L191">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+<span class="nc" id="L192">    Preconditions.checkNotNull(mzRange);</span>
+
+<span class="nc" id="L194">    Integer topIndex = null;</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L196" title="All 4 branches missed.">      if ((topIndex == null || intensityValues[i] &gt; intensityValues[topIndex])</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">          &amp;&amp; mzRange.contains(mzValues[i]))</span>
+<span class="nc" id="L198">        topIndex = i;</span>
+    }
+<span class="nc" id="L200">    return topIndex;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * normalizeIntensity.
+   * &lt;/p&gt;
+   *
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   * @param scale a {@link java.lang.Float} object.
+   */
+  public static void normalizeIntensity(@Nonnull float intensityValues[], @Nonnull Integer size,
+      @Nonnull Float scale) {
+
+    // Parameter check
+<span class="nc" id="L216">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L217">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L218">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+<span class="nc" id="L219">    Preconditions.checkNotNull(scale);</span>
+
+<span class="nc" id="L221">    final float max = getMaxIntensity(intensityValues, size);</span>
+
+<span class="nc bnc" id="L223" title="All 2 branches missed.">    for (int i = 0; i &lt; intensityValues.length; i++) {</span>
+<span class="nc" id="L224">      intensityValues[i] = intensityValues[i] / max * scale;</span>
+    }
+
+<span class="nc" id="L227">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * msSpectrumToString.
+   * &lt;/p&gt;
+   *
+   * @param spectrum a {@link io.github.msdk.datamodel.msspectra.MsSpectrum} object.
+   * @return a {@link java.lang.String} object.
+   */
+  public static @Nonnull String msSpectrumToString(MsSpectrum spectrum) {
+
+<span class="nc" id="L239">    return msSpectrumToString(spectrum.getMzValues(), spectrum.getIntensityValues(),</span>
+<span class="nc" id="L240">        spectrum.getNumberOfDataPoints());</span>
+
+  }
+
+  /**
+   * &lt;p&gt;
+   * msSpectrumToString.
+   * &lt;/p&gt;
+   *
+   * @param mzValues an array of double.
+   * @param intensityValues an array of float.
+   * @param size a {@link java.lang.Integer} object.
+   * @return a {@link java.lang.String} object.
+   */
+  public static @Nonnull String msSpectrumToString(@Nonnull double mzValues[],
+      @Nonnull float intensityValues[], @Nonnull Integer size) {
+
+    // Parameter check
+<span class="nc" id="L258">    Preconditions.checkNotNull(mzValues);</span>
+<span class="nc" id="L259">    Preconditions.checkNotNull(intensityValues);</span>
+<span class="nc" id="L260">    Preconditions.checkNotNull(size);</span>
+<span class="nc" id="L261">    Preconditions.checkPositionIndex(size, mzValues.length);</span>
+<span class="nc" id="L262">    Preconditions.checkPositionIndex(size, intensityValues.length);</span>
+
+<span class="nc" id="L264">    StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">    for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L266">      b.append(mzValues[i]);</span>
+<span class="nc" id="L267">      b.append(&quot; &quot;);</span>
+<span class="nc" id="L268">      b.append(intensityValues[i]);</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">      if (i &lt; size - 1)</span>
+<span class="nc" id="L270">        b.append(&quot;\n&quot;);</span>
+    }
+
+<span class="nc" id="L273">    return b.toString();</span>
+
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</div></body></html>

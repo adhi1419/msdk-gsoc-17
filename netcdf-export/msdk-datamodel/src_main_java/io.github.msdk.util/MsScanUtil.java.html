@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MsScanUtil.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.util</a> &gt; <span class="el_source">MsScanUtil.java</span></div><h1>MsScanUtil.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.util;
+
+import javax.annotation.Nonnull;
+
+import com.google.common.base.Preconditions;
+
+import io.github.msdk.datamodel.impl.SimpleMsScan;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+
+/**
+ * &lt;p&gt;
+ * MsScanUtil class.
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L29">public class MsScanUtil {</span>
+
+  /**
+   * &lt;p&gt;
+   * clone.
+   * &lt;/p&gt;
+   *
+   * @param scan a {@link io.github.msdk.datamodel.rawdata.MsScan} object.
+   * @param copyDataPoints a {@link java.lang.Boolean} object.
+   * @return a {@link io.github.msdk.datamodel.rawdata.MsScan} object.
+   */
+  @Nonnull
+  static public SimpleMsScan clone(@Nonnull MsScan scan, @Nonnull Boolean copyDataPoints) {
+
+<span class="nc" id="L43">    Preconditions.checkNotNull(scan);</span>
+<span class="nc" id="L44">    Preconditions.checkNotNull(copyDataPoints);</span>
+
+<span class="nc" id="L46">    SimpleMsScan newScan = new SimpleMsScan(scan.getScanNumber(), scan.getMsFunction());</span>
+
+<span class="nc" id="L48">    newScan.setPolarity(scan.getPolarity());</span>
+<span class="nc" id="L49">    newScan.setMsScanType(scan.getMsScanType());</span>
+<span class="nc" id="L50">    newScan.setScanningRange(scan.getScanningRange());</span>
+<span class="nc" id="L51">    newScan.setRetentionTime(scan.getRetentionTime());</span>
+<span class="nc" id="L52">    newScan.setMsLevel(scan.getMsLevel());</span>
+<span class="nc" id="L53">    newScan.setSourceInducedFragmentation(scan.getSourceInducedFragmentation());</span>
+<span class="nc" id="L54">    newScan.getIsolations().addAll(scan.getIsolations());</span>
+
+<span class="nc bnc" id="L56" title="All 2 branches missed.">    if (copyDataPoints) {</span>
+<span class="nc" id="L57">      double mzValues[] = scan.getMzValues();</span>
+<span class="nc" id="L58">      float intensityValues[] = scan.getIntensityValues();</span>
+<span class="nc" id="L59">      newScan.setDataPoints(mzValues, intensityValues, scan.getNumberOfDataPoints());</span>
+    }
+
+<span class="nc" id="L62">    return newScan;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param scan a {@link io.github.msdk.datamodel.rawdata.MsScan} object.
+   * @return a {@link java.lang.String} object.
+   */
+  public String msScanToString(@Nonnull MsScan scan) {
+<span class="nc" id="L72">    StringBuilder buf = new StringBuilder();</span>
+<span class="nc" id="L73">    buf.append(&quot;Scan &quot;);</span>
+<span class="nc" id="L74">    final RawDataFile rawDataFile2 = scan.getRawDataFile();</span>
+<span class="nc bnc" id="L75" title="All 4 branches missed.">    if (rawDataFile2 != null &amp;&amp; rawDataFile2.getOriginalFile() != null) {</span>
+<span class="nc" id="L76">      buf.append(rawDataFile2.getOriginalFilename());</span>
+<span class="nc" id="L77">      buf.append(&quot; &quot;);</span>
+    }
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    if (scan.getMsFunction() != null) {</span>
+<span class="nc" id="L80">      buf.append(scan.getMsFunction());</span>
+<span class="nc" id="L81">      buf.append(&quot; &quot;);</span>
+    }
+<span class="nc" id="L83">    buf.append(&quot;#&quot;);</span>
+<span class="nc" id="L84">    buf.append(scan.getScanNumber());</span>
+<span class="nc" id="L85">    return buf.toString();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</div></body></html>

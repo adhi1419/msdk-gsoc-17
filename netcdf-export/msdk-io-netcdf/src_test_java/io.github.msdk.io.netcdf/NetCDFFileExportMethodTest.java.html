@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>NetCDFFileExportMethodTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-netcdf</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.netcdf</a> &gt; <span class="el_source">NetCDFFileExportMethodTest.java</span></div><h1>NetCDFFileExportMethodTest.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.netcdf;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.io.mzml.MzMLFileImportMethod;
+import io.github.msdk.util.MsSpectrumUtil;
+
+<span class="fc" id="L34">public class NetCDFFileExportMethodTest {</span>
+
+  private Path getResourcePath(String resource) throws MSDKException {
+<span class="fc" id="L37">    final URL url = NetCDFFileExportMethod.class.getClassLoader().getResource(resource);</span>
+    try {
+<span class="fc" id="L39">      return Paths.get(url.toURI()).toAbsolutePath();</span>
+<span class="nc" id="L40">    } catch (URISyntaxException e) {</span>
+<span class="nc" id="L41">      throw new MSDKException(e);</span>
+    }
+  }
+
+  @Test
+  public void testWT15() throws MSDKException, IOException {
+
+    float intensityBuffer[];
+
+    // Import the file
+<span class="fc" id="L51">    File inputFile = getResourcePath(&quot;wt15.CDF&quot;).toFile();</span>
+<span class="fc" id="L52">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L53">    NetCDFFileImportMethod importer = new NetCDFFileImportMethod(inputFile);</span>
+<span class="fc" id="L54">    RawDataFile rawFile = importer.execute();</span>
+<span class="fc" id="L55">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L56">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new CDF file
+<span class="fc" id="L59">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.CDF&quot;);</span>
+<span class="fc" id="L60">    tempFile.deleteOnExit();</span>
+<span class="fc" id="L61">    NetCDFFileExportMethod exporter = new NetCDFFileExportMethod(rawFile, tempFile);</span>
+<span class="fc" id="L62">    exporter.execute();</span>
+<span class="fc" id="L63">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new file
+<span class="fc" id="L66">    importer = new NetCDFFileImportMethod(tempFile);</span>
+<span class="fc" id="L67">    RawDataFile newRawFile = importer.execute();</span>
+<span class="fc" id="L68">    Assert.assertNotNull(newRawFile);</span>
+<span class="fc" id="L69">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 1278 scans
+<span class="fc" id="L72">    List&lt;MsScan&gt; scans = newRawFile.getScans();</span>
+<span class="fc" id="L73">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L74">    Assert.assertEquals(1278, scans.size());</span>
+
+    // 3rd scan, #3
+<span class="fc" id="L77">    MsScan scan3 = scans.get(2);</span>
+<span class="fc" id="L78">    Assert.assertEquals(new Integer(3), scan3.getScanNumber());</span>
+<span class="fc" id="L79">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan3.getSpectrumType());</span>
+<span class="fc" id="L80">    Assert.assertEquals(new Integer(1), scan3.getMsLevel());</span>
+<span class="fc" id="L81">    Assert.assertEquals(2504.508f, scan3.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L82">    scan3.getMzValues();</span>
+<span class="fc" id="L83">    intensityBuffer = scan3.getIntensityValues();</span>
+<span class="fc" id="L84">    Assert.assertEquals(420, (int) scan3.getNumberOfDataPoints());</span>
+<span class="fc" id="L85">    Float scan3maxInt =</span>
+<span class="fc" id="L86">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan3.getNumberOfDataPoints());</span>
+<span class="fc" id="L87">    Assert.assertEquals(4.5E4f, scan3maxInt, 1E3f);</span>
+
+    // 1278th scan, #1278
+<span class="fc" id="L90">    MsScan scan1278 = scans.get(1277);</span>
+<span class="fc" id="L91">    Assert.assertEquals(new Integer(1278), scan1278.getScanNumber());</span>
+<span class="fc" id="L92">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan1278.getSpectrumType());</span>
+<span class="fc" id="L93">    Assert.assertEquals(new Integer(1), scan1278.getMsLevel());</span>
+<span class="fc" id="L94">    Assert.assertEquals(4499.826f, scan1278.getRetentionTime(), 0.01f);</span>
+<span class="fc" id="L95">    scan1278.getMzValues();</span>
+<span class="fc" id="L96">    intensityBuffer = scan1278.getIntensityValues();</span>
+<span class="fc" id="L97">    Assert.assertEquals(61, (int) scan1278.getNumberOfDataPoints());</span>
+<span class="fc" id="L98">    Float scan1278maxInt =</span>
+<span class="fc" id="L99">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan1278.getNumberOfDataPoints());</span>
+<span class="fc" id="L100">    Assert.assertEquals(4.0E3f, scan1278maxInt, 1E2f);</span>
+
+<span class="fc" id="L102">    newRawFile.dispose();</span>
+<span class="fc" id="L103">    rawFile.dispose();</span>
+
+<span class="fc" id="L105">  }</span>
+
+  @Test
+  public void test5peptideFT() throws MSDKException, IOException {
+
+    float intensityBuffer[];
+
+    // Import the file
+<span class="fc" id="L113">    File inputFile = getResourcePath(&quot;5peptideFT.mzML&quot;).toFile();</span>
+<span class="fc" id="L114">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="fc" id="L115">    MzMLFileImportMethod parser = new MzMLFileImportMethod(inputFile);</span>
+<span class="fc" id="L116">    RawDataFile rawFile = parser.execute();</span>
+<span class="fc" id="L117">    Assert.assertNotNull(rawFile);</span>
+<span class="fc" id="L118">    Assert.assertEquals(1.0, parser.getFinishedPercentage(), 0.0001);</span>
+
+    // Export the file to a new mzML
+<span class="fc" id="L121">    File tempFile = File.createTempFile(&quot;msdk&quot;, &quot;.cdf&quot;);</span>
+<span class="fc" id="L122">    tempFile.deleteOnExit();</span>
+<span class="fc" id="L123">    NetCDFFileExportMethod exporter = new NetCDFFileExportMethod(rawFile, tempFile);</span>
+<span class="fc" id="L124">    exporter.execute();</span>
+<span class="fc" id="L125">    Assert.assertEquals(1.0, exporter.getFinishedPercentage(), 0.0001);</span>
+
+    // Import the new cdf file
+<span class="fc" id="L128">    NetCDFFileImportMethod importer = new NetCDFFileImportMethod(tempFile);</span>
+<span class="fc" id="L129">    RawDataFile newRawFile = importer.execute();</span>
+<span class="fc" id="L130">    Assert.assertNotNull(newRawFile);</span>
+<span class="fc" id="L131">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+    // The file has 7 scans, 2 pass the predicate
+<span class="fc" id="L134">    List&lt;MsScan&gt; scans = newRawFile.getScans();</span>
+<span class="fc" id="L135">    Assert.assertNotNull(scans);</span>
+<span class="fc" id="L136">    Assert.assertEquals(7, scans.size());</span>
+
+    // 2nd scan, #2
+<span class="fc" id="L139">    MsScan scan2 = scans.get(1);</span>
+<span class="fc" id="L140">    Assert.assertEquals(Integer.valueOf(2), scan2.getScanNumber());</span>
+<span class="fc" id="L141">    Assert.assertEquals(MsSpectrumType.PROFILE, scan2.getSpectrumType());</span>
+<span class="fc" id="L142">    Assert.assertEquals(Integer.valueOf(1), scan2.getMsLevel());</span>
+<span class="fc" id="L143">    Assert.assertEquals(0.474f, scan2.getRetentionTime(), 0.01f);</span>
+    // TODO Should find the right place to store polarity in the cdf file
+    // Assert.assertEquals(PolarityType.POSITIVE, scan2.getPolarity());
+<span class="fc" id="L146">    Assert.assertEquals(209.1818184554577, scan2.getMzValues()[100], 0.00001);</span>
+<span class="fc" id="L147">    scan2.getMzValues();</span>
+<span class="fc" id="L148">    intensityBuffer = scan2.getIntensityValues();</span>
+<span class="fc" id="L149">    Assert.assertEquals(19800, (int) scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L150">    Float scan2maxInt =</span>
+<span class="fc" id="L151">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan2.getNumberOfDataPoints());</span>
+<span class="fc" id="L152">    Assert.assertEquals(1.8E5f, scan2maxInt, 1E4f);</span>
+
+    // 5th scan, #5
+<span class="fc" id="L155">    MsScan scan5 = scans.get(4);</span>
+<span class="fc" id="L156">    Assert.assertEquals(Integer.valueOf(5), scan5.getScanNumber());</span>
+<span class="fc" id="L157">    Assert.assertEquals(MsSpectrumType.CENTROIDED, scan5.getSpectrumType());</span>
+    // TODO Should find the right place to store ms level in the cdf file
+    // Assert.assertEquals(Integer.valueOf(2), scan5.getMsLevel());
+<span class="fc" id="L160">    Assert.assertEquals(2.094f, scan5.getRetentionTime(), 0.01f);</span>
+    // TODO Should find the right place to store polarity in the cdf file
+    // Assert.assertEquals(PolarityType.POSITIVE, scan5.getPolarity());
+<span class="fc" id="L163">    Assert.assertEquals(483.4679870605469, scan5.getMzValues()[200], 0.00001);</span>
+<span class="fc" id="L164">    intensityBuffer = scan5.getIntensityValues();</span>
+<span class="fc" id="L165">    Assert.assertEquals(837, (int) scan5.getNumberOfDataPoints());</span>
+<span class="fc" id="L166">    Float scan5maxInt =</span>
+<span class="fc" id="L167">        MsSpectrumUtil.getMaxIntensity(intensityBuffer, scan5.getNumberOfDataPoints());</span>
+<span class="fc" id="L168">    Assert.assertEquals(8.6E3f, scan5maxInt, 1E2f);</span>
+
+    // Cleanup
+<span class="fc" id="L171">    rawFile.dispose();</span>
+<span class="fc" id="L172">    newRawFile.dispose();</span>
+<span class="fc" id="L173">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</div></body></html>

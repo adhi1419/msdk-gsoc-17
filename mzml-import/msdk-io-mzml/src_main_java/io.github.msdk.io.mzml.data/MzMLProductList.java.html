@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLProductList.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLProductList.java</span></div><h1>MzMLProductList.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+import java.util.ArrayList;
+
+/**
+ * &lt;p&gt;MzMLProductList class.&lt;/p&gt;
+ *
+ */
+public class MzMLProductList {
+
+  private ArrayList&lt;MzMLProduct&gt; products;
+
+  /**
+   * &lt;p&gt;Constructor for MzMLProductList.&lt;/p&gt;
+   */
+<span class="fc" id="L29">  public MzMLProductList() {</span>
+<span class="fc" id="L30">    this.products = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L31">  }</span>
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;products&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return a {@link java.util.ArrayList} object.
+   */
+  public ArrayList&lt;MzMLProduct&gt; getProducts() {
+<span class="nc" id="L39">    return products;</span>
+  }
+
+  /**
+   * &lt;p&gt;addProduct.&lt;/p&gt;
+   *
+   * @param product a {@link io.github.msdk.io.mzml.data.MzMLProduct} object.
+   */
+  public void addProduct(MzMLProduct product) {
+<span class="nc" id="L48">    products.add(product);</span>
+<span class="nc" id="L49">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>

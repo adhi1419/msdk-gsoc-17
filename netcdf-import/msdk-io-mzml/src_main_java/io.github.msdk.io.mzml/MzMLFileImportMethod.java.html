@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLFileImportMethod.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml</a> &gt; <span class="el_source">MzMLFileImportMethod.java</span></div><h1>MzMLFileImportMethod.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.function.Predicate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.MSDKMethod;
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.io.mzml.data.MzMLParser;
+import io.github.msdk.io.mzml.data.MzMLRawDataFile;
+import io.github.msdk.io.mzml.util.ByteBufferInputStream;
+import io.github.msdk.io.mzml.util.FileMemoryMapper;
+import javolution.text.CharArray;
+import javolution.xml.internal.stream.XMLStreamReaderImpl;
+import javolution.xml.stream.XMLStreamConstants;
+import javolution.xml.stream.XMLStreamException;
+
+/**
+ * &lt;p&gt;
+ * This class contains methods which parse data in MzML format from {@link java.io.File File},
+ * {@link java.nio.file.Path Path} or {@link java.io.InputStream InputStream} &lt;br&gt;
+ * {@link io.github.msdk.datamodel.rawdata.MsScan Scan}s and
+ * {@link io.github.msdk.datamodel.chromatograms.Chromatogram Chromatogram}s will be parsed, and the
+ * values pre-loaded when the {@link java.util.function.Predicate Predicate} is passed. Other
+ * {@link io.github.msdk.datamodel.rawdata.MsScan Scan}s and
+ * {@link io.github.msdk.datamodel.chromatograms.Chromatogram Chromatogram}s can be loaded on demand
+ * if the source is a {@link java.io.File File}, whereas, they will be dropped if the source is an
+ * {@link java.io.InputStream InputStream}
+ * &lt;/p&gt;
+ */
+public class MzMLFileImportMethod implements MSDKMethod&lt;RawDataFile&gt; {
+  private final File mzMLFile;
+  final InputStream inputStream;
+  private MzMLRawDataFile newRawFile;
+  private volatile boolean canceled;
+  private Float progress;
+  private int lastLoggedProgress;
+  private Logger logger;
+<span class="nc" id="L60">  private Predicate&lt;MsScan&gt; msScanPredicate = s -&gt; true;</span>
+<span class="nc" id="L61">  private Predicate&lt;Chromatogram&gt; chromatogramPredicate = c -&gt; true;</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param mzMLFilePath a {@link java.lang.String String} which contains the absolute path to the
+   *        MzML File.
+   */
+  public MzMLFileImportMethod(String mzMLFilePath) {
+<span class="nc" id="L72">    this(new File(mzMLFilePath), s -&gt; true, c -&gt; true);</span>
+<span class="nc" id="L73">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param mzMLFilePath a {@link java.lang.String String} which contains the absolute path to the
+   *        MzML File.
+   * @param msScanPredicate Only {@link io.github.msdk.datamodel.rawdata.MsScan MsScan}s which pass
+   *        this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   * @param chromatogramPredicate Only {@link io.github.msdk.datamodel.chromatograms.Chromatogram
+   *        Chromatogram}s which pass this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   */
+  public MzMLFileImportMethod(String mzMLFilePath, Predicate&lt;MsScan&gt; msScanPredicate,
+      Predicate&lt;Chromatogram&gt; chromatogramPredicate) {
+<span class="nc" id="L93">    this(new File(mzMLFilePath), msScanPredicate, chromatogramPredicate);</span>
+<span class="nc" id="L94">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param mzMLFilePath a {@link java.nio.file.Path Path} object which contains the path to the
+   *        MzML File.
+   */
+  public MzMLFileImportMethod(Path mzMLFilePath) {
+<span class="nc" id="L105">    this(mzMLFilePath.toFile(), s -&gt; false, c -&gt; false);</span>
+<span class="nc" id="L106">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param mzMLFilePath a {@link java.nio.file.Path Path} object which contains the path to the
+   *        MzML File.
+   * @param msScanPredicate Only {@link io.github.msdk.datamodel.rawdata.MsScan MsScan}s which pass
+   *        this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   * @param chromatogramPredicate Only {@link io.github.msdk.datamodel.chromatograms.Chromatogram
+   *        Chromatogram}s which pass this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   */
+  public MzMLFileImportMethod(Path mzMLFilePath, Predicate&lt;MsScan&gt; msScanPredicate,
+      Predicate&lt;Chromatogram&gt; chromatogramPredicate) {
+<span class="nc" id="L126">    this(mzMLFilePath.toFile(), msScanPredicate, chromatogramPredicate);</span>
+<span class="nc" id="L127">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param mzMLFile a {@link java.io.File File} object instance of the MzML File.
+   */
+  public MzMLFileImportMethod(File mzMLFile) {
+<span class="nc" id="L137">    this(mzMLFile, null, s -&gt; false, c -&gt; false);</span>
+<span class="nc" id="L138">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param mzMLFile a {@link java.io.File File} object instance of the MzML File.
+   * @param msScanPredicate Only {@link io.github.msdk.datamodel.rawdata.MsScan MsScan}s which pass
+   *        this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   * @param chromatogramPredicate Only {@link io.github.msdk.datamodel.chromatograms.Chromatogram
+   *        Chromatogram}s which pass this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   */
+  public MzMLFileImportMethod(File mzMLFile, Predicate&lt;MsScan&gt; msScanPredicate,
+      Predicate&lt;Chromatogram&gt; chromatogramPredicate) {
+<span class="nc" id="L157">    this(mzMLFile, null, msScanPredicate, chromatogramPredicate);</span>
+<span class="nc" id="L158">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param inputStream an {@link java.io.InputStream InputStream} which contains data in MzML
+   *        format.
+   */
+  public MzMLFileImportMethod(InputStream inputStream) {
+<span class="nc" id="L169">    this(null, inputStream, s -&gt; true, c -&gt; true);</span>
+<span class="nc" id="L170">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for MzMLFileImportMethod.
+   * &lt;/p&gt;
+   *
+   * @param inputStream an {@link java.io.InputStream InputStream} which contains data in MzML
+   *        format.
+   * @param msScanPredicate Only {@link io.github.msdk.datamodel.rawdata.MsScan MsScan}s which pass
+   *        this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   * @param chromatogramPredicate Only {@link io.github.msdk.datamodel.chromatograms.Chromatogram
+   *        Chromatogram}s which pass this predicate will be parsed by the parser and added to the
+   *        {@link io.github.msdk.io.mzml.data.MzMLRawDataFile RawDataFile} returned by the
+   *        {@link #getResult() getResult()} method.
+   */
+  public MzMLFileImportMethod(InputStream inputStream, Predicate&lt;MsScan&gt; msScanPredicate,
+      Predicate&lt;Chromatogram&gt; chromatogramPredicate) {
+<span class="nc" id="L190">    this(null, inputStream, msScanPredicate, chromatogramPredicate);</span>
+<span class="nc" id="L191">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Internal constructor used to initialize instances of this object using other constructors.
+   * &lt;/p&gt;
+   */
+<span class="nc" id="L198">  private MzMLFileImportMethod(File mzMLFile, InputStream inputStream,</span>
+      Predicate&lt;MsScan&gt; msScanPredicate, Predicate&lt;Chromatogram&gt; chromatogramPredicate) {
+<span class="nc" id="L200">    this.mzMLFile = mzMLFile;</span>
+<span class="nc" id="L201">    this.inputStream = inputStream;</span>
+<span class="nc" id="L202">    this.canceled = false;</span>
+<span class="nc" id="L203">    this.progress = 0f;</span>
+<span class="nc" id="L204">    this.lastLoggedProgress = 0;</span>
+<span class="nc" id="L205">    this.logger = LoggerFactory.getLogger(this.getClass());</span>
+<span class="nc" id="L206">    this.msScanPredicate = this.msScanPredicate.and(msScanPredicate);</span>
+<span class="nc" id="L207">    this.chromatogramPredicate = this.chromatogramPredicate.and(chromatogramPredicate);</span>
+<span class="nc" id="L208">  }</span>
+
+  /**
+   * {@inheritDoc}
+   *
+   * &lt;p&gt;
+   * Parse the MzML data and return the parsed data
+   * &lt;/p&gt;
+   */
+  @Override
+  public MzMLRawDataFile execute() throws MSDKException {
+
+    try {
+
+<span class="nc" id="L222">      InputStream is = null;</span>
+
+<span class="nc bnc" id="L224" title="All 2 branches missed.">      if (mzMLFile != null) {</span>
+<span class="nc" id="L225">        logger.info(&quot;Began parsing file: &quot; + mzMLFile.getAbsolutePath());</span>
+<span class="nc" id="L226">        is = FileMemoryMapper.mapToMemory(mzMLFile);</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">      } else if (inputStream != null) {</span>
+<span class="nc" id="L228">        logger.info(&quot;Began parsing file from stream&quot;);</span>
+<span class="nc" id="L229">        is = inputStream;</span>
+<span class="nc" id="L230">      } else {</span>
+<span class="nc" id="L231">        throw new MSDKException(&quot;Invalid input&quot;);</span>
+      }
+      // It's ok to directly create this particular reader, this class is `public final`
+      // and we precisely want that fast UFT-8 reader implementation
+<span class="nc" id="L235">      final XMLStreamReaderImpl xmlStreamReader = new XMLStreamReaderImpl();</span>
+<span class="nc" id="L236">      xmlStreamReader.setInput(is, &quot;UTF-8&quot;);</span>
+
+<span class="nc" id="L238">      MzMLParser parser = new MzMLParser(this);</span>
+<span class="nc" id="L239">      this.newRawFile = parser.getMzMLRawFile();</span>
+
+<span class="nc" id="L241">      lastLoggedProgress = 0;</span>
+
+      int eventType;
+      try {
+        do {
+          // check if parsing has been cancelled?
+<span class="nc bnc" id="L247" title="All 2 branches missed.">          if (canceled)</span>
+<span class="nc" id="L248">            return null;</span>
+
+<span class="nc" id="L250">          eventType = xmlStreamReader.next();</span>
+
+          // XXX Can't track progress this way now, switched to using the primitive InputStream
+          // without the length() function
+          // Update: We can track progress if source is a file
+<span class="nc bnc" id="L255" title="All 2 branches missed.">          if (mzMLFile != null)</span>
+<span class="nc" id="L256">            progress = ((float) (xmlStreamReader.getLocation().getCharacterOffset())</span>
+<span class="nc" id="L257">                / ((ByteBufferInputStream) is).length());</span>
+
+          // Log progress after every 10% completion
+<span class="nc bnc" id="L260" title="All 2 branches missed.">          if ((int) (progress * 100) &gt;= lastLoggedProgress + 10) {</span>
+<span class="nc" id="L261">            lastLoggedProgress = (int) (progress * 10) * 10;</span>
+<span class="nc" id="L262">            logger.debug(&quot;Parsing in progress... &quot; + lastLoggedProgress + &quot;% completed&quot;);</span>
+          }
+
+<span class="nc bnc" id="L265" title="All 4 branches missed.">          switch (eventType) {</span>
+            case XMLStreamConstants.START_ELEMENT:
+<span class="nc" id="L267">              final CharArray openingTagName = xmlStreamReader.getLocalName();</span>
+<span class="nc" id="L268">              parser.processOpeningTag(xmlStreamReader, is, openingTagName);</span>
+<span class="nc" id="L269">              break;</span>
+
+            case XMLStreamConstants.END_ELEMENT:
+<span class="nc" id="L272">              final CharArray closingTagName = xmlStreamReader.getLocalName();</span>
+<span class="nc" id="L273">              parser.processClosingTag(xmlStreamReader, closingTagName);</span>
+<span class="nc" id="L274">              break;</span>
+
+            case XMLStreamConstants.CHARACTERS:
+<span class="nc" id="L277">              parser.processCharacters(xmlStreamReader);</span>
+              break;
+          }
+
+<span class="nc bnc" id="L281" title="All 2 branches missed.">        } while (eventType != XMLStreamConstants.END_DOCUMENT);</span>
+
+<span class="nc" id="L283">      } finally {</span>
+<span class="nc bnc" id="L284" title="All 6 branches missed.">        if (xmlStreamReader != null)</span>
+<span class="nc" id="L285">          xmlStreamReader.close();</span>
+<span class="nc" id="L286">      }</span>
+<span class="nc" id="L287">      progress = 1f;</span>
+<span class="nc" id="L288">      logger.info(&quot;Parsing Complete&quot;);</span>
+<span class="nc" id="L289">    } catch (IOException | XMLStreamException e) {</span>
+<span class="nc" id="L290">      throw (new MSDKException(e));</span>
+    }
+
+<span class="nc" id="L293">    progress = 1f;</span>
+<span class="nc" id="L294">    return newRawFile;</span>
+  }
+
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getFinishedPercentage() {
+<span class="nc" id="L301">    return progress;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public RawDataFile getResult() {
+<span class="nc" id="L307">    return newRawFile;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void cancel() {
+<span class="nc" id="L313">    this.canceled = true;</span>
+<span class="nc" id="L314">  }</span>
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;msScanPredicate&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return {@link java.util.function.Predicate Predicate} specified for
+   *         {@link io.github.msdk.datamodel.rawdata.MsScan MsScan}s &lt;br&gt;
+   *         The {@link java.util.function.Predicate Predicate} evaluates to true always, if it
+   *         wasn't specified on initialization
+   */
+  public Predicate&lt;MsScan&gt; getMsScanPredicate() {
+<span class="nc" id="L325">    return msScanPredicate;</span>
+  }
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;chromatogramPredicate&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return {@link java.util.function.Predicate Predicate} specified for
+   *         {@link io.github.msdk.datamodel.chromatograms.Chromatogram Chromatogram}s &lt;br&gt;
+   *         The {@link java.util.function.Predicate Predicate} evaluates to true always, if it
+   *         wasn't specified on initialization
+   */
+  public Predicate&lt;Chromatogram&gt; getChromatogramPredicate() {
+<span class="nc" id="L337">    return chromatogramPredicate;</span>
+  }
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;mzMLFile&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return a {@link java.io.File File} instance of the MzML source if being read from a file &lt;br&gt;
+   *         null if the MzML source is an {@link java.io.InputStream InputStream}
+   */
+  public File getMzMLFile() {
+<span class="nc" id="L347">    return mzMLFile;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

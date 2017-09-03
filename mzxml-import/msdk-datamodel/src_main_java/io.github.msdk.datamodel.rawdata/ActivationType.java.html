@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ActivationType.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.rawdata</a> &gt; <span class="el_source">ActivationType.java</span></div><h1>ActivationType.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*</span>
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.rawdata;
+
+/**
+ * Represents the various types of MS/MS experiments.
+ *
+ * See also K. K. Murray, R. K. Boyd, M. N. Eberlin, G. J. Langley, L. Li and Y. Naito, Definitions
+ * of Terms Relating to Mass Spectrometry (IUPAC Recommendations 2013) Pure Appl. Chem. 2013, 85,
+ * 1515-1609.
+ */
+<span class="nc" id="L23">public enum ActivationType {</span>
+
+<span class="nc" id="L25">  /**</span>
+   * Collision-induced dissociation.
+   */
+<span class="nc" id="L28">  CID,</span>
+
+<span class="nc" id="L30">  /**</span>
+   * Higher-energy C-trap dissociation.
+   */
+<span class="nc" id="L33">  HCD,</span>
+
+<span class="nc" id="L35">  /**</span>
+   * Electron-capture dissociation.
+   */
+<span class="nc" id="L38">  ECD,</span>
+
+<span class="nc" id="L40">  /**</span>
+   * Electron-transfer dissociation.
+   */
+<span class="nc" id="L43">  ETD,</span>
+
+<span class="nc" id="L45">  /**</span>
+   * Electron-transfer and higher-energy collision dissociation.
+   */
+<span class="nc" id="L48">  ETHCD,</span>
+
+<span class="nc" id="L50">  /**</span>
+   * Ultraviolet photodissociation.
+   */
+<span class="nc" id="L53">  UVPD,</span>
+
+<span class="nc" id="L55">  /**</span>
+   * Unknown MS/MS experiment type.
+   */
+<span class="nc" id="L58">  UNKNOWN;</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

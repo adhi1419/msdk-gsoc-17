@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLCV.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLCV.java</span></div><h1>MzMLCV.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+/**
+ * Controlled vocabulary (CV) values for mzML files.
+ *
+ * @see &lt;a href=
+ *      &quot;http://psidev.cvs.sourceforge.net/viewvc/psidev/psi/psi-ms/mzML/controlledVocabulary/psi-ms.obo&quot;&gt;
+ *      Official CV specification&lt;/a&gt;
+ */
+<span class="nc" id="L23">public class MzMLCV {</span>
+
+  // Scan start time
+  /** Constant &lt;code&gt;MS_RT_SCAN_START=&quot;MS:1000016&quot;&lt;/code&gt; */
+  public static final String MS_RT_SCAN_START = &quot;MS:1000016&quot;; // &quot;scan start time&quot;
+  /** Constant &lt;code&gt;MS_RT_RETENTION_TIME=&quot;MS:1000894&quot;&lt;/code&gt; */
+  public static final String MS_RT_RETENTION_TIME = &quot;MS:1000894&quot;; // &quot;retention time&quot;
+  /** Constant &lt;code&gt;MS_RT_RETENTION_TIME_LOCAL=&quot;MS:1000895&quot;&lt;/code&gt; */
+  public static final String MS_RT_RETENTION_TIME_LOCAL = &quot;MS:1000895&quot;; // &quot;local retention time&quot;
+  /** Constant &lt;code&gt;MS_RT_RETENTION_TIME_NORMALIZED=&quot;MS:1000896&quot;&lt;/code&gt; */
+  public static final String MS_RT_RETENTION_TIME_NORMALIZED = &quot;MS:1000896&quot;; // &quot;normalized
+                                                                             // retention time&quot;
+
+  // MS level
+  /** Constant &lt;code&gt;cvMSLevel=&quot;MS:1000511&quot;&lt;/code&gt; */
+  public static final String cvMSLevel = &quot;MS:1000511&quot;;
+  /** Constant &lt;code&gt;cvMS1Spectrum=&quot;MS:1000579&quot;&lt;/code&gt; */
+  public static final String cvMS1Spectrum = &quot;MS:1000579&quot;;
+
+  // m/z and charge state
+  /** Constant &lt;code&gt;cvMz=&quot;MS:1000040&quot;&lt;/code&gt; */
+  public static final String cvMz = &quot;MS:1000040&quot;;
+  /** Constant &lt;code&gt;cvChargeState=&quot;MS:1000041&quot;&lt;/code&gt; */
+  public static final String cvChargeState = &quot;MS:1000041&quot;;
+
+  // Minutes unit. MS:1000038 is used in mzML 1.0, while UO:000003 is used in
+  // mzML 1.1.0
+  /** Constant &lt;code&gt;cvUnitsMin1=&quot;MS:1000038&quot;&lt;/code&gt; */
+  public static final String cvUnitsMin1 = &quot;MS:1000038&quot;;
+  /** Constant &lt;code&gt;cvUnitsMin2=&quot;UO:0000031&quot;&lt;/code&gt; */
+  public static final String cvUnitsMin2 = &quot;UO:0000031&quot;;
+  /** Constant &lt;code&gt;cvUnitsSec=&quot;UO:0000010&quot;&lt;/code&gt; */
+  public static final String cvUnitsSec = &quot;UO:0000010&quot;;
+
+  // Scan filter string
+  /** Constant &lt;code&gt;cvScanFilterString=&quot;MS:1000512&quot;&lt;/code&gt; */
+  public static final String cvScanFilterString = &quot;MS:1000512&quot;;
+
+  // Precursor m/z.
+  /** Constant &lt;code&gt;cvPrecursorMz=&quot;MS:1000744&quot;&lt;/code&gt; */
+  public static final String cvPrecursorMz = &quot;MS:1000744&quot;;
+
+  // Polarity
+  /** Constant &lt;code&gt;cvPolarityPositive=&quot;MS:1000130&quot;&lt;/code&gt; */
+  public static final String cvPolarityPositive = &quot;MS:1000130&quot;;
+  /** Constant &lt;code&gt;cvPolarityNegative=&quot;MS:1000129&quot;&lt;/code&gt; */
+  public static final String cvPolarityNegative = &quot;MS:1000129&quot;;
+  /** Constant &lt;code&gt;polarityPositiveCvParam&lt;/code&gt; */
+<span class="nc" id="L71">  public static final MzMLCVParam polarityPositiveCvParam =</span>
+<span class="nc" id="L72">      new MzMLCVParam(cvPolarityPositive, &quot;&quot;, &quot;positive scan&quot;, null);</span>
+  /** Constant &lt;code&gt;polarityNegativeCvParam&lt;/code&gt; */
+<span class="nc" id="L74">  public static final MzMLCVParam polarityNegativeCvParam =</span>
+<span class="nc" id="L75">      new MzMLCVParam(cvPolarityNegative, &quot;&quot;, &quot;negative scan&quot;, null);</span>
+
+  // Centroid vs profile
+  /** Constant &lt;code&gt;cvCentroidSpectrum=&quot;MS:1000127&quot;&lt;/code&gt; */
+  public static final String cvCentroidSpectrum = &quot;MS:1000127&quot;;
+  /** Constant &lt;code&gt;cvProfileSpectrum=&quot;MS:1000128&quot;&lt;/code&gt; */
+  public static final String cvProfileSpectrum = &quot;MS:1000128&quot;;
+  /** Constant &lt;code&gt;centroidCvParam&lt;/code&gt; */
+<span class="nc" id="L83">  public static final MzMLCVParam centroidCvParam =</span>
+<span class="nc" id="L84">      new MzMLCVParam(cvCentroidSpectrum, &quot;&quot;, &quot;centroid mass spectrum&quot;, null);</span>
+  /** Constant &lt;code&gt;profileCvParam&lt;/code&gt; */
+<span class="nc" id="L86">  public static final MzMLCVParam profileCvParam =</span>
+<span class="nc" id="L87">      new MzMLCVParam(cvProfileSpectrum, &quot;&quot;, &quot;profile spectrum&quot;, null);</span>
+
+
+  // Total Ion Current
+  /** Constant &lt;code&gt;cvTIC=&quot;MS:1000285&quot;&lt;/code&gt; */
+  public static final String cvTIC = &quot;MS:1000285&quot;;
+
+  // m/z range
+  /** Constant &lt;code&gt;cvLowestMz=&quot;MS:1000528&quot;&lt;/code&gt; */
+  public static final String cvLowestMz = &quot;MS:1000528&quot;;
+  /** Constant &lt;code&gt;cvHighestMz=&quot;MS:1000527&quot;&lt;/code&gt; */
+  public static final String cvHighestMz = &quot;MS:1000527&quot;;
+
+  // Scan window range
+
+  /** Constant &lt;code&gt;cvScanWindowUpperLimit=&quot;MS:1000500&quot;&lt;/code&gt; */
+  public static final String cvScanWindowUpperLimit = &quot;MS:1000500&quot;;
+  /** Constant &lt;code&gt;cvScanWindowLowerLimit=&quot;MS:1000501&quot;&lt;/code&gt; */
+  public static final String cvScanWindowLowerLimit = &quot;MS:1000501&quot;;
+
+
+  // Chromatograms
+  /** Constant &lt;code&gt;cvChromatogramTIC=&quot;MS:1000235&quot;&lt;/code&gt; */
+  public static final String cvChromatogramTIC = &quot;MS:1000235&quot;;
+  /** Constant &lt;code&gt;cvChromatogramMRM_SRM=&quot;MS:1001473&quot;&lt;/code&gt; */
+  public static final String cvChromatogramMRM_SRM = &quot;MS:1001473&quot;;
+  /** Constant &lt;code&gt;cvChromatogramSIC=&quot;MS:1000627&quot;&lt;/code&gt; */
+  public static final String cvChromatogramSIC = &quot;MS:1000627&quot;;
+  /** Constant &lt;code&gt;cvChromatogramBPC=&quot;MS:1000628&quot;&lt;/code&gt; */
+  public static final String cvChromatogramBPC = &quot;MS:1000628&quot;;
+
+  // Activation
+  /** Constant &lt;code&gt;cvActivationEnergy=&quot;MS:1000045&quot;&lt;/code&gt; */
+  public static final String cvActivationEnergy = &quot;MS:1000045&quot;;
+  /** Constant &lt;code&gt;cvActivationCID=&quot;MS:1000133&quot;&lt;/code&gt; */
+  public static final String cvActivationCID = &quot;MS:1000133&quot;;
+
+  // Isolation
+  /** Constant &lt;code&gt;cvIsolationWindowTarget=&quot;MS:1000827&quot;&lt;/code&gt; */
+  public static final String cvIsolationWindowTarget = &quot;MS:1000827&quot;;
+  /** Constant &lt;code&gt;cvIsolationWindowLowerOffset=&quot;MS:1000828&quot;&lt;/code&gt; */
+  public static final String cvIsolationWindowLowerOffset = &quot;MS:1000828&quot;;
+  /** Constant &lt;code&gt;cvIsolationWindowUpperOffset=&quot;MS:1000829&quot;&lt;/code&gt; */
+  public static final String cvIsolationWindowUpperOffset = &quot;MS:1000829&quot;;
+
+  // Data arrays
+  /** Constant &lt;code&gt;cvMzArray=&quot;MS:1000514&quot;&lt;/code&gt; */
+  public static final String cvMzArray = &quot;MS:1000514&quot;;
+  /** Constant &lt;code&gt;cvIntensityArray=&quot;MS:1000515&quot;&lt;/code&gt; */
+  public static final String cvIntensityArray = &quot;MS:1000515&quot;;
+  /** Constant &lt;code&gt;cvRetentionTimeArray=&quot;MS:1000595&quot;&lt;/code&gt; */
+  public static final String cvRetentionTimeArray = &quot;MS:1000595&quot;;
+
+  // UV spectrum, actually &quot;electromagnetic radiation spectrum&quot;
+  /** Constant &lt;code&gt;cvUVSpectrum=&quot;MS:1000804&quot;&lt;/code&gt; */
+  public static final String cvUVSpectrum = &quot;MS:1000804&quot;;
+
+  // Intensity array unit
+  /** Constant &lt;code&gt;cvUnitsIntensity1=&quot;MS:1000131&quot;&lt;/code&gt; */
+<span class="nc" id="L146">  public static final String cvUnitsIntensity1 = &quot;MS:1000131&quot;;</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

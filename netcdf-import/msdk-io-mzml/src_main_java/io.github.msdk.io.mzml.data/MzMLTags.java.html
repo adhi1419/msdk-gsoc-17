@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLTags.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLTags.java</span></div><h1>MzMLTags.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+/**
+ * &lt;p&gt;
+ * Class containing String constants of various XML tags and attributes found in the mzML format
+ * &lt;/p&gt;
+ */
+<span class="nc" id="L21">public abstract class MzMLTags {</span>
+
+  /** Constant &lt;code&gt;TAG_INDEXED_MZML=&quot;indexedmzML&quot;&lt;/code&gt; */
+  public static final String TAG_INDEXED_MZML = &quot;indexedmzML&quot;;
+  /** Constant &lt;code&gt;TAG_MZML=&quot;mzML&quot;&lt;/code&gt; */
+  public static final String TAG_MZML = &quot;mzML&quot;;
+  /** Constant &lt;code&gt;TAG_CV_LIST=&quot;cvList&quot;&lt;/code&gt; */
+  public static final String TAG_CV_LIST = &quot;cvList&quot;;
+  /** Constant &lt;code&gt;TAG_DATA_PROCESSING_LIST=&quot;dataProcessingList&quot;&lt;/code&gt; */
+  public static final String TAG_DATA_PROCESSING_LIST = &quot;dataProcessingList&quot;;
+  /** Constant &lt;code&gt;TAG_DATA_PROCESSING=&quot;dataProcessing&quot;&lt;/code&gt; */
+  public static final String TAG_DATA_PROCESSING = &quot;dataProcessing&quot;;
+  /** Constant &lt;code&gt;TAG_PROCESSING_METHOD=&quot;processingMethod&quot;&lt;/code&gt; */
+  public static final String TAG_PROCESSING_METHOD = &quot;processingMethod&quot;;
+  /** Constant &lt;code&gt;TAG_RUN=&quot;run&quot;&lt;/code&gt; */
+  public static final String TAG_RUN = &quot;run&quot;;
+  /** Constant &lt;code&gt;TAG_SPECTRUM_LIST=&quot;spectrumList&quot;&lt;/code&gt; */
+  public static final String TAG_SPECTRUM_LIST = &quot;spectrumList&quot;;
+  /** Constant &lt;code&gt;TAG_SPECTRUM=&quot;spectrum&quot;&lt;/code&gt; */
+  public static final String TAG_SPECTRUM = &quot;spectrum&quot;;
+  /** Constant &lt;code&gt;TAG_CV_PARAM=&quot;cvParam&quot;&lt;/code&gt; */
+  public static final String TAG_CV_PARAM = &quot;cvParam&quot;;
+  /** Constant &lt;code&gt;TAG_SCAN_LIST=&quot;scanList&quot;&lt;/code&gt; */
+  public static final String TAG_SCAN_LIST = &quot;scanList&quot;;
+  /** Constant &lt;code&gt;TAG_SCAN=&quot;scan&quot;&lt;/code&gt; */
+  public static final String TAG_SCAN = &quot;scan&quot;;
+  /** Constant &lt;code&gt;TAG_SCAN_WINDOW_LIST=&quot;scanWindowList&quot;&lt;/code&gt; */
+  public static final String TAG_SCAN_WINDOW_LIST = &quot;scanWindowList&quot;;
+  /** Constant &lt;code&gt;TAG_SCAN_WINDOW=&quot;scanWindow&quot;&lt;/code&gt; */
+  public static final String TAG_SCAN_WINDOW = &quot;scanWindow&quot;;
+  /** Constant &lt;code&gt;TAG_BINARY_DATA_ARRAY_LIST=&quot;binaryDataArrayList&quot;&lt;/code&gt; */
+  public static final String TAG_BINARY_DATA_ARRAY_LIST = &quot;binaryDataArrayList&quot;;
+  /** Constant &lt;code&gt;TAG_BINARY_DATA_ARRAY=&quot;binaryDataArray&quot;&lt;/code&gt; */
+  public static final String TAG_BINARY_DATA_ARRAY = &quot;binaryDataArray&quot;;
+  /** Constant &lt;code&gt;TAG_BINARY=&quot;binary&quot;&lt;/code&gt; */
+  public static final String TAG_BINARY = &quot;binary&quot;;
+  /** Constant &lt;code&gt;TAG_CHROMATOGRAM_LIST=&quot;chromatogramList&quot;&lt;/code&gt; */
+  public static final String TAG_CHROMATOGRAM_LIST = &quot;chromatogramList&quot;;
+  /** Constant &lt;code&gt;TAG_CHROMATOGRAM=&quot;chromatogram&quot;&lt;/code&gt; */
+  public static final String TAG_CHROMATOGRAM = &quot;chromatogram&quot;;
+  /** Constant &lt;code&gt;TAG_PRECURSOR=&quot;precursor&quot;&lt;/code&gt; */
+  public static final String TAG_PRECURSOR = &quot;precursor&quot;;
+  /** Constant &lt;code&gt;TAG_ISOLATION_WINDOW=&quot;isolationWindow&quot;&lt;/code&gt; */
+  public static final String TAG_ISOLATION_WINDOW = &quot;isolationWindow&quot;;
+  /** Constant &lt;code&gt;TAG_ACTIVATION=&quot;activation&quot;&lt;/code&gt; */
+  public static final String TAG_ACTIVATION = &quot;activation&quot;;
+  /** Constant &lt;code&gt;TAG_PRODUCT=&quot;product&quot;&lt;/code&gt; */
+  public static final String TAG_PRODUCT = &quot;product&quot;;
+  /** Constant &lt;code&gt;TAG_PRODUCT_LIST=&quot;productList&quot;&lt;/code&gt; */
+  public static final String TAG_PRODUCT_LIST = &quot;productList&quot;;
+  /** Constant &lt;code&gt;TAG_REF_PARAM_GROUP=&quot;referenceableParamGroup&quot;&lt;/code&gt; */
+  public final static String TAG_REF_PARAM_GROUP = &quot;referenceableParamGroup&quot;;
+  /** Constant &lt;code&gt;TAG_REF_PARAM_GROUP_REF=&quot;referenceableParamGroupRef&quot;&lt;/code&gt; */
+  public final static String TAG_REF_PARAM_GROUP_REF = &quot;referenceableParamGroupRef&quot;;
+  /** Constant &lt;code&gt;TAG_REF_PARAM_GROUP_LIST=&quot;referenceableParamGroupList&quot;&lt;/code&gt; */
+  public final static String TAG_REF_PARAM_GROUP_LIST = &quot;referenceableParamGroupList&quot;;
+  /** Constant &lt;code&gt;TAG_PRECURSOR_LIST=&quot;precursorList&quot;&lt;/code&gt; */
+  public final static String TAG_PRECURSOR_LIST = &quot;precursorList&quot;;
+  /** Constant &lt;code&gt;TAG_SELECTED_ION_LIST=&quot;selectedIonList&quot;&lt;/code&gt; */
+  public final static String TAG_SELECTED_ION_LIST = &quot;selectedIonList&quot;;
+  /** Constant &lt;code&gt;TAG_SELECTED_ION=&quot;selectedIon&quot;&lt;/code&gt; */
+  public final static String TAG_SELECTED_ION = &quot;selectedIon&quot;;
+  /** Constant &lt;code&gt;TAG_INDEX_LIST=&quot;indexList&quot;&lt;/code&gt; */
+  public final static String TAG_INDEX_LIST = &quot;indexList&quot;;
+  /** Constant &lt;code&gt;TAG_INDEX=&quot;index&quot;&lt;/code&gt; */
+  public final static String TAG_INDEX = &quot;index&quot;;
+  /** Constant &lt;code&gt;TAG_OFFSET=&quot;offset&quot;&lt;/code&gt; */
+  public final static String TAG_OFFSET = &quot;offset&quot;;
+  /** Constant &lt;code&gt;TAG_INDEX_LIST_OFFSET=&quot;indexListOffset&quot;&lt;/code&gt; */
+  public final static String TAG_INDEX_LIST_OFFSET = &quot;indexListOffset&quot;;
+  /** Constant &lt;code&gt;TAG_FILE_CHECKSUM=&quot;fileChecksum&quot;&lt;/code&gt; */
+  public final static String TAG_FILE_CHECKSUM = &quot;fileChecksum&quot;;
+
+  /** Constant &lt;code&gt;ATTR_XSI=&quot;xsi&quot;&lt;/code&gt; */
+  public static final String ATTR_XSI = &quot;xsi&quot;;
+  /** Constant &lt;code&gt;ATTR_SCHEME_LOCATION=&quot;schemeLocation&quot;&lt;/code&gt; */
+  public static final String ATTR_SCHEME_LOCATION = &quot;schemeLocation&quot;;
+  /** Constant &lt;code&gt;ATTR_ID=&quot;id&quot;&lt;/code&gt; */
+  public static final String ATTR_ID = &quot;id&quot;;
+  /** Constant &lt;code&gt;ATTR_VERSION=&quot;version&quot;&lt;/code&gt; */
+  public static final String ATTR_VERSION = &quot;version&quot;;
+  /** Constant &lt;code&gt;ATTR_COUNT=&quot;count&quot;&lt;/code&gt; */
+  public static final String ATTR_COUNT = &quot;count&quot;;
+  /** Constant &lt;code&gt;ATTR_SOFTWARE_REF=&quot;softwareRef&quot;&lt;/code&gt; */
+  public static final String ATTR_SOFTWARE_REF = &quot;softwareRef&quot;;
+  /** Constant &lt;code&gt;ATTR_ORDER=&quot;order&quot;&lt;/code&gt; */
+  public static final String ATTR_ORDER = &quot;order&quot;;
+  /** Constant &lt;code&gt;ATTR_DEFAULT_ARRAY_LENGTH=&quot;defaultArrayLength&quot;&lt;/code&gt; */
+  public static final String ATTR_DEFAULT_ARRAY_LENGTH = &quot;defaultArrayLength&quot;;
+  /** Constant &lt;code&gt;ATTR_INDEX=&quot;index&quot;&lt;/code&gt; */
+  public static final String ATTR_INDEX = &quot;index&quot;;
+  /** Constant &lt;code&gt;ATTR_CV_REF=&quot;cvRef&quot;&lt;/code&gt; */
+  public static final String ATTR_CV_REF = &quot;cvRef&quot;;
+  /** Constant &lt;code&gt;ATTR_NAME=&quot;name&quot;&lt;/code&gt; */
+  public static final String ATTR_NAME = &quot;name&quot;;
+  /** Constant &lt;code&gt;ATTR_ACCESSION=&quot;accession&quot;&lt;/code&gt; */
+  public static final String ATTR_ACCESSION = &quot;accession&quot;;
+  /** Constant &lt;code&gt;ATTR_VALUE=&quot;value&quot;&lt;/code&gt; */
+  public static final String ATTR_VALUE = &quot;value&quot;;
+  /** Constant &lt;code&gt;ATTR_UNIT_ACCESSION=&quot;unitAccession&quot;&lt;/code&gt; */
+  public static final String ATTR_UNIT_ACCESSION = &quot;unitAccession&quot;;
+  /** Constant &lt;code&gt;ATTR_ENCODED_LENGTH=&quot;encodedLength&quot;&lt;/code&gt; */
+  public static final String ATTR_ENCODED_LENGTH = &quot;encodedLength&quot;;
+  /** Constant &lt;code&gt;ATTR_ID_REF=&quot;idRef&quot;&lt;/code&gt; */
+  public static final String ATTR_ID_REF = &quot;idRef&quot;;
+  /** Constant &lt;code&gt;ATTR_SPECTRUM_REF=&quot;spectrumRef&quot;&lt;/code&gt; */
+  public static final String ATTR_SPECTRUM_REF = &quot;spectrumRef&quot;;
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>NetCDFFileExportMethod.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-netcdf</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.netcdf</a> &gt; <span class="el_source">NetCDFFileExportMethod.java</span></div><h1>NetCDFFileExportMethod.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.netcdf;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.MSDKMethod;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import ucar.ma2.Array;
+import ucar.ma2.DataType;
+import ucar.ma2.InvalidRangeException;
+import ucar.nc2.Attribute;
+import ucar.nc2.Dimension;
+import ucar.nc2.NetcdfFileWriter;
+import ucar.nc2.NetcdfFileWriter.Version;
+import ucar.nc2.Variable;
+
+/**
+ * &lt;p&gt;
+ * This class contains methods which can be used to write data contained in a
+ * {@link o.github.msdk.datamodel.rawdata.RawDataFile RawDataFile} to a file, in netCDF-3 format
+ * &lt;/p&gt;
+ *
+ */
+public class NetCDFFileExportMethod implements MSDKMethod&lt;Void&gt; {
+
+  private final @Nonnull RawDataFile rawDataFile;
+  private final @Nonnull File target;
+  private final @Nonnull double massValueScaleFactor;
+  private final @Nonnull double intensityValueScaleFactor;
+
+<span class="nc" id="L53">  private final Logger logger = LoggerFactory.getLogger(this.getClass());</span>
+<span class="nc" id="L54">  private boolean canceled = false;</span>
+<span class="nc" id="L55">  private int totalScans = 0;</span>
+<span class="nc" id="L56">  private float progress = 0f;</span>
+<span class="nc" id="L57">  private int lastLoggedProgress = 0;</span>
+  private List&lt;MsScan&gt; scans;
+  private int[] scanStartPositions;
+  private NetcdfFileWriter writer;
+
+  /**
+   * &lt;p&gt;
+   * Constructor for NetCDFFileExportMethod.
+   * &lt;/p&gt;
+   * 
+   * @param rawDataFile the input {@link o.github.msdk.datamodel.rawdata.RawDataFile RawDataFile}
+   *        which contains the data to be exported
+   * @param target the target {@link java.io.File File} to write the data, in netCDF format
+   */
+  public NetCDFFileExportMethod(@Nonnull RawDataFile rawDataFile, @Nonnull File target) {
+<span class="nc" id="L72">    this(rawDataFile, target, 1, 1);</span>
+<span class="nc" id="L73">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for NetCDFFileExportMethod.
+   * &lt;/p&gt;
+   * 
+   * @param rawDataFile the input {@link o.github.msdk.datamodel.rawdata.RawDataFile RawDataFile}
+   *        which contains the data to be exported
+   * @param target the target {@link java.io.File File} to write the data, in netCDF format
+   * @param massValueScaleFactor double value by which the mass values have to be scaled by
+   * @param intensityValueScaleFactor double value by which the intensity values have to be scaled
+   *        by
+
+   */
+<span class="nc" id="L88">  public NetCDFFileExportMethod(@Nonnull RawDataFile rawDataFile, @Nonnull File target,</span>
+      double massValueScaleFactor, double intensityValueScaleFactor) {
+<span class="nc" id="L90">    this.rawDataFile = rawDataFile;</span>
+<span class="nc" id="L91">    this.target = target;</span>
+<span class="nc" id="L92">    this.massValueScaleFactor = massValueScaleFactor;</span>
+<span class="nc" id="L93">    this.intensityValueScaleFactor = intensityValueScaleFactor;</span>
+<span class="nc" id="L94">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Execute the process of writing the data from the the input
+   * {@link o.github.msdk.datamodel.rawdata.RawDataFile RawDataFile} to the target
+   * {@link java.io.File File}
+   * &lt;/p&gt;
+   * 
+   * @return nothing, a void method
+   */
+  @Override
+  public Void execute() throws MSDKException {
+
+<span class="nc" id="L108">    logger.info(&quot;Started export of &quot; + rawDataFile.getName() + &quot; to &quot; + target);</span>
+
+<span class="nc" id="L110">    scans = rawDataFile.getScans();</span>
+<span class="nc" id="L111">    totalScans = scans.size();</span>
+<span class="nc" id="L112">    scanStartPositions = new int[totalScans + 1];</span>
+
+    try {
+
+<span class="nc" id="L116">      writer = NetcdfFileWriter.createNew(Version.netcdf3, target.getAbsolutePath());</span>
+
+<span class="nc" id="L118">      Array scanIndexArray = getScanIndexArray();</span>
+<span class="nc" id="L119">      Array scanTimeArray = getScanTimeArray();</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">      if (scanIndexArray == null)</span>
+<span class="nc" id="L121">        return null;</span>
+
+<span class="nc" id="L123">      List&lt;Dimension&gt; scanIndexDims = getScanIndexDims();</span>
+<span class="nc" id="L124">      Variable scanIndexVariable =</span>
+<span class="nc" id="L125">          writer.addVariable(null, &quot;scan_index&quot;, DataType.INT, scanIndexDims);</span>
+<span class="nc" id="L126">      Variable scanTimeVariable =</span>
+<span class="nc" id="L127">          writer.addVariable(null, &quot;scan_acquisition_time&quot;, DataType.FLOAT, scanIndexDims);</span>
+
+<span class="nc" id="L129">      progress = 0.2f;</span>
+
+      // data values storage dimension
+      // Dimension to store the data arrays of various scans
+<span class="nc" id="L133">      List&lt;Dimension&gt; pointNumValDims = getPointValDims();</span>
+<span class="nc" id="L134">      Variable massValueVariable = getMassValueVariable(pointNumValDims);</span>
+<span class="nc" id="L135">      Variable intensityValueVariable = getIntensityValueVariable(pointNumValDims);</span>
+
+      // populate the mass and the intensity values
+<span class="nc" id="L138">      Array massValueArray =</span>
+<span class="nc" id="L139">          Array.factory(double.class, new int[] {scanStartPositions[totalScans]});</span>
+<span class="nc" id="L140">      Array intensityValueArray =</span>
+<span class="nc" id="L141">          Array.factory(double.class, new int[] {scanStartPositions[totalScans]});</span>
+
+<span class="nc" id="L143">      int idx = 0;</span>
+<span class="nc" id="L144">      double mzValues[] = new double[10000];</span>
+<span class="nc" id="L145">      float intensityValues[] = new float[10000];</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">      for (MsScan scan : scans) {</span>
+<span class="nc" id="L147">        mzValues = scan.getMzValues(mzValues);</span>
+<span class="nc" id="L148">        intensityValues = scan.getIntensityValues(intensityValues);</span>
+
+<span class="nc bnc" id="L150" title="All 2 branches missed.">        if (canceled) {</span>
+<span class="nc" id="L151">          writer.close();</span>
+<span class="nc" id="L152">          return null;</span>
+        }
+
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        for (int i = 0; i &lt; scan.getNumberOfDataPoints(); i++) {</span>
+<span class="nc" id="L156">          massValueArray.setDouble(idx, mzValues[i]);</span>
+<span class="nc" id="L157">          intensityValueArray.setDouble(idx, intensityValues[i]);</span>
+<span class="nc" id="L158">          idx++;</span>
+        }
+
+<span class="nc" id="L161">        progress = 0.2f + 0.6f * ((float) idx / scanStartPositions[totalScans]);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if ((int) (progress * 100) &gt;= lastLoggedProgress + 10) {</span>
+<span class="nc" id="L163">          lastLoggedProgress = (int) (progress * 10) * 10;</span>
+<span class="nc" id="L164">          logger.debug(&quot;Exporting in progress... &quot; + lastLoggedProgress + &quot;% completed&quot;);</span>
+        }
+
+      }
+
+      // Create the netCDF-3 file
+<span class="nc" id="L170">      writer.create();</span>
+
+      // Write out the non-record variables
+<span class="nc" id="L173">      writer.write(scanIndexVariable, scanIndexArray);</span>
+<span class="nc" id="L174">      writer.write(massValueVariable, massValueArray);</span>
+<span class="nc" id="L175">      writer.write(intensityValueVariable, intensityValueArray);</span>
+<span class="nc" id="L176">      writer.write(scanTimeVariable, scanTimeArray);</span>
+
+      // Close the writer
+<span class="nc" id="L179">      writer.close();</span>
+
+<span class="nc" id="L181">      progress = 1.0f;</span>
+
+<span class="nc" id="L183">    } catch (IOException | InvalidRangeException e) {</span>
+<span class="nc" id="L184">      new MSDKException(e);</span>
+    }
+
+<span class="nc" id="L187">    return null;</span>
+  }
+
+  /**
+   * 
+   * @return scanIndexArray an {@link ucar.ma2.Array Array} containing scan indices of all scans
+   * @throws IOException
+   */
+  private Array getScanIndexArray() throws IOException {
+    // Populate the scan indices
+    // Create a simple 1D array of type int, element i of the shape array contains the length of
+    // the (i+1)th dimension of the array
+<span class="nc" id="L199">    Array scanIndexArray = Array.factory(int.class, new int[] {totalScans});</span>
+<span class="nc" id="L200">    int idx = 0;</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">    for (MsScan scan : scans) {</span>
+
+<span class="nc bnc" id="L203" title="All 2 branches missed.">      if (canceled) {</span>
+<span class="nc" id="L204">        writer.close();</span>
+<span class="nc" id="L205">        return null;</span>
+      }
+
+<span class="nc" id="L208">      scanStartPositions[idx + 1] = scanStartPositions[idx] + scan.getNumberOfDataPoints();</span>
+<span class="nc" id="L209">      idx++;</span>
+
+    }
+
+<span class="nc bnc" id="L213" title="All 2 branches missed.">    for (int i = 0; i &lt; scanStartPositions.length - 1; i++)</span>
+<span class="nc" id="L214">      scanIndexArray.setInt(i, scanStartPositions[i]);</span>
+
+<span class="nc" id="L216">    return scanIndexArray;</span>
+  }
+
+  /**
+   * 
+   * @return scanIndexDims a {@link java.util.List List} containing all dimension definitions for
+   *         the Scan Index Variable
+   */
+  private List&lt;Dimension&gt; getScanIndexDims() {
+    // Write the scan indices
+    // Create a variable and set the dimension scan_number=totalScans to it
+<span class="nc" id="L227">    Dimension scanNumberDim = writer.addDimension(null, &quot;scan_number&quot;, totalScans);</span>
+<span class="nc" id="L228">    List&lt;Dimension&gt; scanIndexDims = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L229">    scanIndexDims.add(scanNumberDim);</span>
+
+<span class="nc" id="L231">    return scanIndexDims;</span>
+  }
+
+  /**
+   * 
+   * @return pointValDims a {@link java.util.List List} containing all dimension definitions for the
+   *         mass and intensity value variables
+   */
+  private List&lt;Dimension&gt; getPointValDims() {
+    // data values storage dimension
+    // Dimension to store the data arrays of various scans
+<span class="nc" id="L242">    Dimension pointNumDim =</span>
+<span class="nc" id="L243">        writer.addDimension(null, &quot;point_number&quot;, scanStartPositions[totalScans]);</span>
+<span class="nc" id="L244">    List&lt;Dimension&gt; pointNumValDims = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L245">    pointNumValDims.add(pointNumDim);</span>
+<span class="nc" id="L246">    return pointNumValDims;</span>
+  }
+
+  /**
+   * 
+   * @return scanTimeArray an {@link ucar.ma2.Array Array} containing scan retention times for all
+   *         scans
+   */
+  private Array getScanTimeArray() {
+    // Populate scan times
+<span class="nc" id="L256">    Array scanTimeArray = Array.factory(float.class, new int[] {totalScans});</span>
+<span class="nc" id="L257">    int idx = 0;</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">    for (MsScan scan : scans)</span>
+<span class="nc" id="L259">      scanTimeArray.setFloat(idx++, scan.getRetentionTime());</span>
+
+<span class="nc" id="L261">    return scanTimeArray;</span>
+  }
+
+  /**
+   * Create mass values variable add its attributes and give it its dimension, short hand name and
+   * data type
+   * 
+   * @param pointNumValDims a {@link java.util.List List} containing all dimension definitions for
+   *        the mass and intensity value variables
+   * @return massValueVariable {@link ucar.nc2.Variable Variable} containing the m/z data of the
+   *         scans
+   */
+  private Variable getMassValueVariable(List&lt;Dimension&gt; pointNumValDims) {
+    // Create mass values variable and add its attributes
+<span class="nc" id="L275">    Variable massValueVariable =</span>
+<span class="nc" id="L276">        writer.addVariable(null, &quot;mass_values&quot;, DataType.FLOAT, pointNumValDims);</span>
+<span class="nc" id="L277">    massValueVariable.addAttribute(new Attribute(&quot;units&quot;, &quot;M/Z&quot;));</span>
+<span class="nc" id="L278">    massValueVariable.addAttribute(new Attribute(&quot;scale_factor&quot;, massValueScaleFactor));</span>
+
+<span class="nc" id="L280">    return massValueVariable;</span>
+  }
+
+  /**
+   * Create intensity values variable add its attributes and give it its dimension, short hand name
+   * and data type
+   * 
+   * @param pointNumValDims a {@link java.util.List List} containing all dimension definitions for
+   *        the mass and intensity value variables
+   * @return intensityValueVariable {@link ucar.nc2.Variable Variable} containing the intensity data
+   *         of the scans
+   */
+  private Variable getIntensityValueVariable(List&lt;Dimension&gt; pointNumValDims) {
+    // Create intensity values variable and add its attributes
+<span class="nc" id="L294">    Variable intensityValueVariable =</span>
+<span class="nc" id="L295">        writer.addVariable(null, &quot;intensity_values&quot;, DataType.FLOAT, pointNumValDims);</span>
+<span class="nc" id="L296">    intensityValueVariable.addAttribute(new Attribute(&quot;units&quot;, &quot;Arbitrary Intensity Units&quot;));</span>
+<span class="nc" id="L297">    intensityValueVariable.addAttribute(new Attribute(&quot;scale_factor&quot;, intensityValueScaleFactor));</span>
+
+<span class="nc" id="L299">    return intensityValueVariable;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Float getFinishedPercentage() {
+<span class="nc" id="L305">    return progress;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Void getResult() {
+<span class="nc" id="L311">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void cancel() {
+<span class="nc" id="L317">    this.canceled = true;</span>
+<span class="nc" id="L318">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

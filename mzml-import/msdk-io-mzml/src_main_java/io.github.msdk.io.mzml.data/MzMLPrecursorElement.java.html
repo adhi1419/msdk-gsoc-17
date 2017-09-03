@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLPrecursorElement.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLPrecursorElement.java</span></div><h1>MzMLPrecursorElement.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+import java.util.Optional;
+
+/**
+ * &lt;p&gt;MzMLPrecursorElement class.&lt;/p&gt;
+ *
+ */
+public class MzMLPrecursorElement {
+
+  private final Optional&lt;String&gt; spectrumRef;
+  private Optional&lt;MzMLIsolationWindow&gt; isolationWindow;
+  private Optional&lt;MzMLPrecursorSelectedIonList&gt; selectedIonList;
+  private MzMLPrecursorActivation activation;
+
+
+  /**
+   * &lt;p&gt;Constructor for MzMLPrecursorElement.&lt;/p&gt;
+   *
+   * @param spectrumRef a {@link java.lang.String} object.
+   */
+<span class="fc" id="L35">  public MzMLPrecursorElement(String spectrumRef) {</span>
+<span class="fc" id="L36">    this.spectrumRef = Optional.ofNullable(spectrumRef);</span>
+<span class="fc" id="L37">    this.isolationWindow = Optional.ofNullable(null);</span>
+<span class="fc" id="L38">    this.selectedIonList = Optional.ofNullable(null);</span>
+<span class="fc" id="L39">  }</span>
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;spectrumRef&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return a {@link java.util.Optional} object.
+   */
+  public Optional&lt;String&gt; getSpectrumRef() {
+<span class="nc" id="L47">    return spectrumRef;</span>
+  }
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;isolationWindow&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return a {@link java.util.Optional} object.
+   */
+  public Optional&lt;MzMLIsolationWindow&gt; getIsolationWindow() {
+<span class="fc" id="L56">    return isolationWindow;</span>
+  }
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;selectedIonList&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return a {@link java.util.Optional} object.
+   */
+  public Optional&lt;MzMLPrecursorSelectedIonList&gt; getSelectedIonList() {
+<span class="fc" id="L65">    return selectedIonList;</span>
+  }
+
+  /**
+   * &lt;p&gt;Getter for the field &lt;code&gt;activation&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLPrecursorActivation} object.
+   */
+  public MzMLPrecursorActivation getActivation() {
+<span class="fc" id="L74">    return activation;</span>
+  }
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;isolationWindow&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param isolationWindow a {@link io.github.msdk.io.mzml.data.MzMLIsolationWindow} object.
+   */
+  public void setIsolationWindow(MzMLIsolationWindow isolationWindow) {
+<span class="fc" id="L83">    this.isolationWindow = Optional.ofNullable(isolationWindow);</span>
+<span class="fc" id="L84">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;selectedIonList&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param selectedIonList a {@link io.github.msdk.io.mzml.data.MzMLPrecursorSelectedIonList} object.
+   */
+  public void setSelectedIonList(MzMLPrecursorSelectedIonList selectedIonList) {
+<span class="fc" id="L92">    this.selectedIonList = Optional.ofNullable(selectedIonList);</span>
+<span class="fc" id="L93">  }</span>
+
+  /**
+   * &lt;p&gt;Setter for the field &lt;code&gt;activation&lt;/code&gt;.&lt;/p&gt;
+   *
+   * @param activation a {@link io.github.msdk.io.mzml.data.MzMLPrecursorActivation} object.
+   */
+  public void setActivation(MzMLPrecursorActivation activation) {
+<span class="fc" id="L101">    this.activation = activation;</span>
+<span class="fc" id="L102">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>

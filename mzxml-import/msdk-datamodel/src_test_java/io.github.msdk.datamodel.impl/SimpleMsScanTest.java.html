@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleMsScanTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.impl</a> &gt; <span class="el_source">SimpleMsScanTest.java</span></div><h1>SimpleMsScanTest.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.impl;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import com.google.common.collect.Range;
+
+import io.github.msdk.MSDKException;
+import io.github.msdk.MSDKRuntimeException;
+import io.github.msdk.datamodel.files.FileType;
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.ActivationType;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.MsScanType;
+import io.github.msdk.datamodel.rawdata.PolarityType;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+
+/**
+ * Tests for SimpleMsScan
+ */
+<span class="nc" id="L39">public class SimpleMsScanTest {</span>
+
+<span class="nc" id="L41">  private static @Nonnull String msFunction = &quot;MS&quot;;</span>
+<span class="nc" id="L42">  private static @Nonnull SimpleMsScan msScan1 = new SimpleMsScan(123, msFunction);</span>
+
+  @Test
+  public void testScanNumber() throws MSDKException {
+    // Verify scan number
+<span class="nc" id="L47">    Assert.assertEquals(new Integer(123), msScan1.getScanNumber());</span>
+<span class="nc" id="L48">  }</span>
+
+  @Test
+  public void testMsFunction() throws MSDKException {
+    // Verify ms function
+<span class="nc" id="L53">    Assert.assertEquals(&quot;MS&quot;, msScan1.getMsFunction());</span>
+<span class="nc" id="L54">    Assert.assertEquals(new Integer(1), msScan1.getMsLevel());</span>
+
+    // Change ms function
+<span class="nc" id="L57">    final @Nonnull String newMsFunction = &quot;MS TOF&quot;;</span>
+<span class="nc" id="L58">    msScan1.setMsFunction(newMsFunction);</span>
+<span class="nc" id="L59">    msScan1.setMsLevel(2);</span>
+
+    // Verify ms function
+<span class="nc" id="L62">    Assert.assertEquals(&quot;MS TOF&quot;, msScan1.getMsFunction());</span>
+<span class="nc" id="L63">    Assert.assertEquals(new Integer(2), msScan1.getMsLevel());</span>
+<span class="nc" id="L64">  }</span>
+
+  @Test
+  public void testPolarity() throws MSDKException {
+    // Verify polarity
+<span class="nc" id="L69">    Assert.assertEquals(PolarityType.UNKNOWN, msScan1.getPolarity());</span>
+
+    // Change polarity
+<span class="nc" id="L72">    msScan1.setPolarity(PolarityType.POSITIVE);</span>
+
+    // Verify polarity
+<span class="nc" id="L75">    Assert.assertEquals(PolarityType.POSITIVE, msScan1.getPolarity());</span>
+<span class="nc" id="L76">  }</span>
+
+  @Test
+  public void testMsScanType() throws MSDKException {
+    // Verify ms scan type
+<span class="nc" id="L81">    Assert.assertEquals(MsScanType.UNKNOWN, msScan1.getMsScanType());</span>
+
+    // Change ms scan type
+<span class="nc" id="L84">    msScan1.setMsScanType(MsScanType.MRM_SRM);</span>
+
+    // Verify ms scan type
+<span class="nc" id="L87">    Assert.assertEquals(MsScanType.MRM_SRM, msScan1.getMsScanType());</span>
+<span class="nc" id="L88">  }</span>
+
+
+  @Test
+  public void testRawDataFile() throws MSDKException {
+    // Verify raw data file
+<span class="nc" id="L94">    Assert.assertEquals(null, msScan1.getRawDataFile());</span>
+
+    // Change raw data file
+<span class="nc" id="L97">    final @Nonnull RawDataFile newRawDataFile =</span>
+<span class="nc" id="L98">        new SimpleRawDataFile(&quot;Sample B1&quot;, null, FileType.MZML);</span>
+<span class="nc" id="L99">    msScan1.setRawDataFile(newRawDataFile);</span>
+
+    // Verify raw data file
+<span class="nc" id="L102">    Assert.assertEquals(&quot;Sample B1&quot;, msScan1.getRawDataFile().getName());</span>
+<span class="nc" id="L103">    Assert.assertEquals(FileType.MZML, msScan1.getRawDataFile().getRawDataFileType());</span>
+<span class="nc" id="L104">  }</span>
+
+  @Test
+  public void testScanningRange() throws MSDKException {
+    // Verify scanning range
+<span class="nc" id="L109">    Assert.assertEquals(null, msScan1.getScanningRange());</span>
+
+    // Change scanning range
+<span class="nc" id="L112">    final Range&lt;Double&gt; newScanRange = Range.closed(0.5, 6.0);</span>
+<span class="nc" id="L113">    msScan1.setScanningRange(newScanRange);</span>
+
+    // Verify scanning range
+<span class="nc" id="L116">    Assert.assertEquals(newScanRange, msScan1.getScanningRange());</span>
+<span class="nc" id="L117">  }</span>
+
+
+  @Test
+  public void testRetentionTime() throws MSDKException {
+    // Verify RT
+<span class="nc" id="L123">    Assert.assertEquals(null, msScan1.getRetentionTime());</span>
+
+    // Change RT
+<span class="nc" id="L126">    final @Nonnull Float newChromatographyInfo = 1.23f;</span>
+<span class="nc" id="L127">    msScan1.setRetentionTime(newChromatographyInfo);</span>
+
+    // Verify RT
+<span class="nc" id="L130">    Assert.assertEquals(new Float(1.23), msScan1.getRetentionTime());</span>
+<span class="nc" id="L131">  }</span>
+
+
+  @Test
+  public void testSourceInducedFragmentation() throws MSDKException {
+    // Verify scanning range
+<span class="nc" id="L137">    Assert.assertEquals(null, msScan1.getSourceInducedFragmentation());</span>
+
+    // Change scanning range
+<span class="nc" id="L140">    final @Nonnull ActivationInfo newFragmentationInfo =</span>
+<span class="nc" id="L141">        new SimpleActivationInfo(25.00, ActivationType.CID);</span>
+<span class="nc" id="L142">    msScan1.setSourceInducedFragmentation(newFragmentationInfo);</span>
+
+    // Verify scanning range
+<span class="nc" id="L145">    Assert.assertEquals(new Double(25.00),</span>
+<span class="nc" id="L146">        msScan1.getSourceInducedFragmentation().getActivationEnergy());</span>
+<span class="nc" id="L147">    Assert.assertEquals(ActivationType.CID,</span>
+<span class="nc" id="L148">        msScan1.getSourceInducedFragmentation().getActivationType());</span>
+<span class="nc" id="L149">  }</span>
+
+
+  @Test
+  public void testIsolationInfo() throws MSDKException {
+    // Verify isolation info
+<span class="nc" id="L155">    Assert.assertEquals(new LinkedList&lt;&gt;(), msScan1.getIsolations());</span>
+
+    // Change isolation info
+<span class="nc" id="L158">    final @Nonnull List&lt;IsolationInfo&gt; newIsolations = msScan1.getIsolations();</span>
+<span class="nc" id="L159">    newIsolations.add(new SimpleIsolationInfo(Range.closed(1.2, 8.9)));</span>
+<span class="nc" id="L160">    newIsolations.add(new SimpleIsolationInfo(Range.closed(0.0, 10.0), 0.5f, 500.123, 1, null));</span>
+
+    // Verify isolation info
+<span class="nc" id="L163">    Assert.assertEquals(Range.closed(0.0, 10.0), newIsolations.get(1).getIsolationMzRange());</span>
+<span class="nc" id="L164">    Assert.assertEquals(new Float(0.5), newIsolations.get(1).getIonInjectTime());</span>
+<span class="nc" id="L165">    Assert.assertEquals(new Double(500.123), newIsolations.get(1).getPrecursorMz());</span>
+<span class="nc" id="L166">    Assert.assertEquals(new Integer(1), newIsolations.get(1).getPrecursorCharge());</span>
+<span class="nc" id="L167">  }</span>
+
+  @Test
+  public void testTIC() throws MSDKException {
+
+<span class="nc" id="L172">    double mzBuffer[] = new double[10000];</span>
+<span class="nc" id="L173">    float intBuffer[] = new float[10000];</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">    for (int i = 0; i &lt; intBuffer.length; i++) {</span>
+<span class="nc" id="L175">      intBuffer[i] = 100f / i;</span>
+    }
+
+<span class="nc" id="L178">    SimpleMsScan scan = new SimpleMsScan(1);</span>
+<span class="nc" id="L179">    scan.setDataPoints(mzBuffer, intBuffer, 9000);</span>
+
+<span class="nc" id="L181">    float sumInt = 0;</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">    for (int i = 0; i &lt; 9000; i++) {</span>
+<span class="nc" id="L183">      sumInt += intBuffer[i];</span>
+    }
+<span class="nc" id="L185">    Assert.assertEquals(sumInt, scan.getTIC(), 0.00001);</span>
+
+<span class="nc" id="L187">  }</span>
+
+  @Test
+  public void testSetRawDataFile() throws MSDKException {
+<span class="nc" id="L191">    RawDataFile rdf = new SimpleRawDataFile(&quot;test&quot;, null, FileType.UNKNOWN);</span>
+<span class="nc" id="L192">    SimpleMsScan scan = new SimpleMsScan(1);</span>
+<span class="nc" id="L193">    scan.setRawDataFile(rdf);</span>
+<span class="nc" id="L194">    Assert.assertEquals(rdf, scan.getRawDataFile());</span>
+<span class="nc" id="L195">  }</span>
+
+  @Test(expected = MSDKRuntimeException.class)
+  public void testSetRawDataFileFail() throws MSDKException {
+<span class="nc" id="L199">    RawDataFile rdf = new SimpleRawDataFile(&quot;test&quot;, null, FileType.UNKNOWN);</span>
+<span class="nc" id="L200">    RawDataFile rdf2 = new SimpleRawDataFile(&quot;test2&quot;, null, FileType.UNKNOWN);</span>
+<span class="nc" id="L201">    SimpleMsScan scan = new SimpleMsScan(1);</span>
+<span class="nc" id="L202">    scan.setRawDataFile(rdf);</span>
+<span class="nc" id="L203">    scan.setRawDataFile(rdf2);</span>
+<span class="nc" id="L204">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzXMLParserTest (Sep 3, 2017 7:23:44 PM)</div></body></html>

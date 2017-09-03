@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleActivationInfo.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.impl</a> &gt; <span class="el_source">SimpleActivationInfo.java</span></div><h1>SimpleActivationInfo.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.impl;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.base.Preconditions;
+
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.ActivationType;
+
+/**
+ * Implementation of FragmentationInfo
+ */
+public class SimpleActivationInfo implements ActivationInfo {
+
+<span class="nc" id="L29">  private @Nonnull ActivationType fragmentationType = ActivationType.UNKNOWN;</span>
+  private @Nullable Double activationEnergy;
+
+  /**
+   * &lt;p&gt;Constructor for SimpleActivationInfo.&lt;/p&gt;
+   *
+   * @param activationEnergy a {@link java.lang.Double} object.
+   */
+<span class="nc" id="L37">  public SimpleActivationInfo(@Nullable Double activationEnergy) {</span>
+<span class="nc" id="L38">    this.activationEnergy = activationEnergy;</span>
+<span class="nc" id="L39">  }</span>
+
+  /**
+   * &lt;p&gt;Constructor for SimpleActivationInfo.&lt;/p&gt;
+   *
+   * @param activationEnergy a {@link java.lang.Double} object.
+   * @param fragmentationType a {@link io.github.msdk.datamodel.rawdata.ActivationType} object.
+   */
+<span class="nc" id="L47">  public SimpleActivationInfo(@Nullable Double activationEnergy,</span>
+      @Nonnull ActivationType fragmentationType) {
+<span class="nc" id="L49">    Preconditions.checkNotNull(fragmentationType);</span>
+<span class="nc" id="L50">    this.activationEnergy = activationEnergy;</span>
+<span class="nc" id="L51">    this.fragmentationType = fragmentationType;</span>
+<span class="nc" id="L52">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public ActivationType getActivationType() {
+<span class="nc" id="L58">    return fragmentationType;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public Double getActivationEnergy() {
+<span class="nc" id="L65">    return activationEnergy;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

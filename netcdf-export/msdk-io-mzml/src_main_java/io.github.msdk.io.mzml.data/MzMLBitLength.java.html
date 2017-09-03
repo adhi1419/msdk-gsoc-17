@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLBitLength.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLBitLength.java</span></div><h1>MzMLBitLength.java</h1><pre class="source lang-java linenums"><span class="pc" id="L1">/*</span>
+ * (C) Copyright 2015-2016 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+/**
+ * Enumeration of different types of precision bit lengths which are parsed by the MzML Parser
+ */
+<span class="fc" id="L19">public enum MzMLBitLength {</span>
+<span class="fc" id="L20">  THIRTY_TWO_BIT_INTEGER(&quot;MS:1000519&quot;), // 32-bit integer</span>
+<span class="fc" id="L21">  SIXTEEN_BIT_FLOAT(&quot;MS:1000520&quot;), // 16-bit float</span>
+<span class="fc" id="L22">  THIRTY_TWO_BIT_FLOAT(&quot;MS:1000521&quot;), // 32-bit float</span>
+<span class="fc" id="L23">  SIXTY_FOUR_BIT_INTEGER(&quot;MS:1000522&quot;), // 64-bit integer</span>
+<span class="fc" id="L24">  SIXTY_FOUR_BIT_FLOAT(&quot;MS:1000523&quot;); // 64-bit float</span>
+
+  private final String accession;
+
+<span class="fc" id="L28">  MzMLBitLength(String accession) {</span>
+<span class="fc" id="L29">    this.accession = accession;</span>
+<span class="fc" id="L30">  }</span>
+
+  /**
+   * &lt;p&gt;getValue.&lt;/p&gt;
+   *
+   * @return the CV Parameter accession of the precision bit length as {@link java.lang.String
+   *         String}
+   */
+  public String getValue() {
+<span class="fc" id="L39">    return accession;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileExportMethodTest (Sep 3, 2017 7:25:19 PM)</div></body></html>

@@ -1,0 +1,722 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SpectrumTypeDetectionAlgorithmTest.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-spectra-spectrumtypedetection</a> &gt; <a href="../index.html" class="el_bundle">src/test/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.spectra.spectrumtypedetection</a> &gt; <span class="el_source">SpectrumTypeDetectionAlgorithmTest.java</span></div><h1>SpectrumTypeDetectionAlgorithmTest.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.spectra.spectrumtypedetection;
+
+import java.io.File;
+
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import io.github.msdk.datamodel.msspectra.MsSpectrumType;
+import io.github.msdk.datamodel.rawdata.MsScan;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+
+<span class="nc" id="L26">public class SpectrumTypeDetectionAlgorithmTest {</span>
+
+  @Test
+  public void testCentroided1() throws Exception {
+
+<span class="nc" id="L31">    File inputFile =</span>
+<span class="nc" id="L32">        new File(this.getClass().getClassLoader().getResource(&quot;centroided1.mzML&quot;).toURI());</span>
+<span class="nc" id="L33">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L34">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L35">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L36">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L37">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L39" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L40">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L41">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L42">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L43">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L46">    rawFile.dispose();</span>
+
+<span class="nc" id="L48">  }</span>
+
+
+  @Test
+  public void testCentroided2() throws Exception {
+
+<span class="nc" id="L54">    File inputFile =</span>
+<span class="nc" id="L55">        new File(this.getClass().getClassLoader().getResource(&quot;centroided2.mzML&quot;).toURI());</span>
+<span class="nc" id="L56">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L57">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L58">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L59">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L60">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L62" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L63">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L64">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L65">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L66">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L69">    rawFile.dispose();</span>
+
+<span class="nc" id="L71">  }</span>
+
+
+  @Test
+  public void testCentroided3() throws Exception {
+
+<span class="nc" id="L77">    File inputFile =</span>
+<span class="nc" id="L78">        new File(this.getClass().getClassLoader().getResource(&quot;centroided3.mzML&quot;).toURI());</span>
+<span class="nc" id="L79">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L80">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L81">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L82">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L83">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L86">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L87">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L88">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L89">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L92">    rawFile.dispose();</span>
+
+<span class="nc" id="L94">  }</span>
+
+
+  @Test
+  public void testCentroided4() throws Exception {
+
+<span class="nc" id="L100">    File inputFile =</span>
+<span class="nc" id="L101">        new File(this.getClass().getClassLoader().getResource(&quot;centroided4.mzML&quot;).toURI());</span>
+<span class="nc" id="L102">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L103">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L104">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L105">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L106">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L108" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L109">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L110">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L111">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L112">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L115">    rawFile.dispose();</span>
+
+<span class="nc" id="L117">  }</span>
+
+
+  @Test
+  public void testCentroided5() throws Exception {
+
+<span class="nc" id="L123">    File inputFile =</span>
+<span class="nc" id="L124">        new File(this.getClass().getClassLoader().getResource(&quot;centroided5.mzML&quot;).toURI());</span>
+<span class="nc" id="L125">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L126">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L127">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L128">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L129">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L132">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L133">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L134">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L135">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L138">    rawFile.dispose();</span>
+
+<span class="nc" id="L140">  }</span>
+
+
+  @Test
+  public void testCentroided6() throws Exception {
+
+<span class="nc" id="L146">    File inputFile =</span>
+<span class="nc" id="L147">        new File(this.getClass().getClassLoader().getResource(&quot;centroided6.mzML&quot;).toURI());</span>
+<span class="nc" id="L148">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L149">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L150">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L151">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L152">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L154" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L155">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L156">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L157">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L158">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L161">    rawFile.dispose();</span>
+
+<span class="nc" id="L163">  }</span>
+
+
+  @Test
+  public void testCentroided7() throws Exception {
+
+<span class="nc" id="L169">    File inputFile =</span>
+<span class="nc" id="L170">        new File(this.getClass().getClassLoader().getResource(&quot;centroided7.mzML&quot;).toURI());</span>
+<span class="nc" id="L171">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L172">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L173">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L174">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L175">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L177" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L178">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L179">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L180">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L181">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L184">    rawFile.dispose();</span>
+
+<span class="nc" id="L186">  }</span>
+
+
+  @Test
+  public void testCentroided8() throws Exception {
+
+<span class="nc" id="L192">    File inputFile =</span>
+<span class="nc" id="L193">        new File(this.getClass().getClassLoader().getResource(&quot;centroided8.mzML&quot;).toURI());</span>
+<span class="nc" id="L194">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L195">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L196">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L197">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L198">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L200" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L201">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L202">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L203">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L204">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L207">    rawFile.dispose();</span>
+
+<span class="nc" id="L209">  }</span>
+
+
+  @Test
+  public void testCentroided9() throws Exception {
+
+<span class="nc" id="L215">    File inputFile =</span>
+<span class="nc" id="L216">        new File(this.getClass().getClassLoader().getResource(&quot;centroided9.mzML&quot;).toURI());</span>
+<span class="nc" id="L217">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L218">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L219">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L220">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L221">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L223" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L224">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L225">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L226">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L227">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L230">    rawFile.dispose();</span>
+
+<span class="nc" id="L232">  }</span>
+
+
+  @Test
+  public void testCentroided10() throws Exception {
+
+<span class="nc" id="L238">    File inputFile =</span>
+<span class="nc" id="L239">        new File(this.getClass().getClassLoader().getResource(&quot;centroided10.mzML&quot;).toURI());</span>
+<span class="nc" id="L240">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L241">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L242">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L243">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L244">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L246" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L247">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L248">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L249">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L250">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L253">    rawFile.dispose();</span>
+
+<span class="nc" id="L255">  }</span>
+
+
+  @Test
+  public void testCentroided11() throws Exception {
+
+<span class="nc" id="L261">    File inputFile =</span>
+<span class="nc" id="L262">        new File(this.getClass().getClassLoader().getResource(&quot;centroided11.mzML&quot;).toURI());</span>
+<span class="nc" id="L263">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L264">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L265">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L266">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L267">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L269" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L270">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L271">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L272">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L273">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L276">    rawFile.dispose();</span>
+
+<span class="nc" id="L278">  }</span>
+
+
+  @Test
+  public void testCentroided12() throws Exception {
+
+<span class="nc" id="L284">    File inputFile =</span>
+<span class="nc" id="L285">        new File(this.getClass().getClassLoader().getResource(&quot;centroided12.mzML&quot;).toURI());</span>
+<span class="nc" id="L286">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L287">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L288">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L289">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L290">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L292" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L293">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L294">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L295">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L296">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L299">    rawFile.dispose();</span>
+
+<span class="nc" id="L301">  }</span>
+
+
+  @Test
+  public void testCentroided13() throws Exception {
+
+<span class="nc" id="L307">    File inputFile =</span>
+<span class="nc" id="L308">        new File(this.getClass().getClassLoader().getResource(&quot;centroided13.mzML&quot;).toURI());</span>
+<span class="nc" id="L309">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L310">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L311">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L312">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L313">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L315" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L316">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L317">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L318">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L319">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L322">    rawFile.dispose();</span>
+
+<span class="nc" id="L324">  }</span>
+
+
+  @Test
+  public void testCentroided14() throws Exception {
+
+<span class="nc" id="L330">    File inputFile =</span>
+<span class="nc" id="L331">        new File(this.getClass().getClassLoader().getResource(&quot;centroided14.mzML&quot;).toURI());</span>
+<span class="nc" id="L332">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L333">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L334">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L335">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L336">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L338" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L339">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L340">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L341">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L342">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L345">    rawFile.dispose();</span>
+
+<span class="nc" id="L347">  }</span>
+
+
+  @Test
+  public void testCentroided15() throws Exception {
+
+<span class="nc" id="L353">    File inputFile =</span>
+<span class="nc" id="L354">        new File(this.getClass().getClassLoader().getResource(&quot;centroided15.mzML&quot;).toURI());</span>
+<span class="nc" id="L355">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L356">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L357">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L358">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L359">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L361" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L362">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L363">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L364">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L365">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L368">    rawFile.dispose();</span>
+
+<span class="nc" id="L370">  }</span>
+
+
+  @Test
+  @Ignore(&quot;Algorithm fails on this test, need a better algorithm&quot;)
+  public void testCentroided16() throws Exception {
+
+<span class="nc" id="L377">    File inputFile =</span>
+<span class="nc" id="L378">        new File(this.getClass().getClassLoader().getResource(&quot;centroided16.mzML&quot;).toURI());</span>
+<span class="nc" id="L379">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L380">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L381">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L382">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L383">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L385" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L386">      final MsSpectrumType expectedType = MsSpectrumType.CENTROIDED;</span>
+<span class="nc" id="L387">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L388">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L389">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L392">    rawFile.dispose();</span>
+
+<span class="nc" id="L394">  }</span>
+
+
+  @Test
+  public void testProfile1() throws Exception {
+
+<span class="nc" id="L400">    File inputFile =</span>
+<span class="nc" id="L401">        new File(this.getClass().getClassLoader().getResource(&quot;profile1.mzML&quot;).toURI());</span>
+<span class="nc" id="L402">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L403">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L404">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L405">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L406">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L408" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L409">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L410">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L411">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L412">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L415">    rawFile.dispose();</span>
+
+<span class="nc" id="L417">  }</span>
+
+
+  @Test
+  public void testProfile2() throws Exception {
+
+<span class="nc" id="L423">    File inputFile =</span>
+<span class="nc" id="L424">        new File(this.getClass().getClassLoader().getResource(&quot;profile2.mzML&quot;).toURI());</span>
+<span class="nc" id="L425">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L426">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L427">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L428">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L429">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L431" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L432">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L433">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L434">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L435">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L438">    rawFile.dispose();</span>
+
+<span class="nc" id="L440">  }</span>
+
+
+  @Test
+  public void testProfile3() throws Exception {
+
+<span class="nc" id="L446">    File inputFile =</span>
+<span class="nc" id="L447">        new File(this.getClass().getClassLoader().getResource(&quot;profile3.mzML&quot;).toURI());</span>
+<span class="nc" id="L448">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L449">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L450">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L451">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L452">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L454" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L455">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L456">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L457">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L458">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L461">    rawFile.dispose();</span>
+
+<span class="nc" id="L463">  }</span>
+
+
+  @Test
+  public void testProfile4() throws Exception {
+
+<span class="nc" id="L469">    File inputFile =</span>
+<span class="nc" id="L470">        new File(this.getClass().getClassLoader().getResource(&quot;profile4.mzML&quot;).toURI());</span>
+<span class="nc" id="L471">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L472">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L473">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L474">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L475">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L477" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L478">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L479">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L480">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L481">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L484">    rawFile.dispose();</span>
+
+<span class="nc" id="L486">  }</span>
+
+
+  @Test
+  public void testProfile5() throws Exception {
+
+<span class="nc" id="L492">    File inputFile =</span>
+<span class="nc" id="L493">        new File(this.getClass().getClassLoader().getResource(&quot;profile5.mzML&quot;).toURI());</span>
+<span class="nc" id="L494">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L495">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L496">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L497">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L498">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L500" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L501">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L502">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L503">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L504">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L507">    rawFile.dispose();</span>
+
+<span class="nc" id="L509">  }</span>
+
+
+  @Test
+  public void testProfile6() throws Exception {
+
+<span class="nc" id="L515">    File inputFile =</span>
+<span class="nc" id="L516">        new File(this.getClass().getClassLoader().getResource(&quot;profile6.mzML&quot;).toURI());</span>
+<span class="nc" id="L517">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L518">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L519">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L520">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L521">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L523" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L524">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L525">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L526">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L527">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L530">    rawFile.dispose();</span>
+
+<span class="nc" id="L532">  }</span>
+
+
+  @Test
+  public void testProfile7() throws Exception {
+
+<span class="nc" id="L538">    File inputFile =</span>
+<span class="nc" id="L539">        new File(this.getClass().getClassLoader().getResource(&quot;profile7.mzML&quot;).toURI());</span>
+<span class="nc" id="L540">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L541">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L542">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L543">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L544">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L546" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L547">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L548">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L549">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L550">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L553">    rawFile.dispose();</span>
+
+<span class="nc" id="L555">  }</span>
+
+
+  @Test
+  public void testProfile8() throws Exception {
+
+<span class="nc" id="L561">    File inputFile =</span>
+<span class="nc" id="L562">        new File(this.getClass().getClassLoader().getResource(&quot;profile8.mzML&quot;).toURI());</span>
+<span class="nc" id="L563">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L564">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L565">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L566">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L567">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L569" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L570">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L571">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L572">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L573">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L576">    rawFile.dispose();</span>
+
+<span class="nc" id="L578">  }</span>
+
+
+  @Test
+  public void testProfile9() throws Exception {
+
+<span class="nc" id="L584">    File inputFile =</span>
+<span class="nc" id="L585">        new File(this.getClass().getClassLoader().getResource(&quot;profile9.mzML&quot;).toURI());</span>
+<span class="nc" id="L586">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L587">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L588">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L589">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L590">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L592" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L593">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L594">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L595">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L596">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L599">    rawFile.dispose();</span>
+
+<span class="nc" id="L601">  }</span>
+
+
+  @Test
+  @Ignore(&quot;Algorithm fails on this test, need a better algorithm&quot;)
+  public void testProfile10() throws Exception {
+
+<span class="nc" id="L608">    File inputFile =</span>
+<span class="nc" id="L609">        new File(this.getClass().getClassLoader().getResource(&quot;profile10.mzML&quot;).toURI());</span>
+<span class="nc" id="L610">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L611">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L612">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L613">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L614">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L616" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L617">      final MsSpectrumType expectedType = MsSpectrumType.PROFILE;</span>
+<span class="nc" id="L618">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L619">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L620">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L623">    rawFile.dispose();</span>
+
+<span class="nc" id="L625">  }</span>
+
+
+  @Test
+  public void testThresholded1() throws Exception {
+
+<span class="nc" id="L631">    File inputFile =</span>
+<span class="nc" id="L632">        new File(this.getClass().getClassLoader().getResource(&quot;thresholded1.mzML&quot;).toURI());</span>
+<span class="nc" id="L633">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L634">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L635">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L636">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L637">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L639" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L640">      final MsSpectrumType expectedType = MsSpectrumType.THRESHOLDED;</span>
+<span class="nc" id="L641">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L642">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L643">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L646">    rawFile.dispose();</span>
+
+<span class="nc" id="L648">  }</span>
+
+
+  @Test
+  public void testThresholded2() throws Exception {
+
+<span class="nc" id="L654">    File inputFile =</span>
+<span class="nc" id="L655">        new File(this.getClass().getClassLoader().getResource(&quot;thresholded2.mzML&quot;).toURI());</span>
+<span class="nc" id="L656">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L657">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L658">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L659">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L660">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L662" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L663">      final MsSpectrumType expectedType = MsSpectrumType.THRESHOLDED;</span>
+<span class="nc" id="L664">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L665">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L666">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L669">    rawFile.dispose();</span>
+
+<span class="nc" id="L671">  }</span>
+
+
+  @Test
+  @Ignore(&quot;Algorithm fails on this test, need a better algorithm&quot;)
+  public void testThresholded3() throws Exception {
+
+<span class="nc" id="L678">    File inputFile =</span>
+<span class="nc" id="L679">        new File(this.getClass().getClassLoader().getResource(&quot;thresholded3.mzML&quot;).toURI());</span>
+<span class="nc" id="L680">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L681">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L682">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L683">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L684">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L686" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L687">      final MsSpectrumType expectedType = MsSpectrumType.THRESHOLDED;</span>
+<span class="nc" id="L688">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L689">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L690">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L693">    rawFile.dispose();</span>
+
+<span class="nc" id="L695">  }</span>
+
+
+  @Test
+  @Ignore(&quot;Algorithm fails on this test, need a better algorithm&quot;)
+  public void testThresholded4() throws Exception {
+
+<span class="nc" id="L702">    File inputFile =</span>
+<span class="nc" id="L703">        new File(this.getClass().getClassLoader().getResource(&quot;thresholded4.mzML&quot;).toURI());</span>
+<span class="nc" id="L704">    Assert.assertTrue(inputFile.canRead());</span>
+<span class="nc" id="L705">    MzMLFileImportMethod importer = new MzMLFileImportMethod(inputFile);</span>
+<span class="nc" id="L706">    RawDataFile rawFile = importer.execute();</span>
+<span class="nc" id="L707">    Assert.assertNotNull(rawFile);</span>
+<span class="nc" id="L708">    Assert.assertEquals(1.0, importer.getFinishedPercentage(), 0.0001);</span>
+
+<span class="nc bnc" id="L710" title="All 2 branches missed.">    for (MsScan scan : rawFile.getScans()) {</span>
+<span class="nc" id="L711">      final MsSpectrumType expectedType = MsSpectrumType.THRESHOLDED;</span>
+<span class="nc" id="L712">      final MsSpectrumType detectedType = SpectrumTypeDetectionAlgorithm.detectSpectrumType(scan);</span>
+<span class="nc" id="L713">      Assert.assertEquals(&quot;Scan type wrongly detected for scan &quot; + scan.getScanNumber() + &quot; in &quot;</span>
+<span class="nc" id="L714">          + rawFile.getName(), expectedType, detectedType);</span>
+    }
+
+<span class="nc" id="L717">    rawFile.dispose();</span>
+
+<span class="nc" id="L719">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>NetCDFFileImportMethodTest (Sep 3, 2017 7:25:50 PM)</div></body></html>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleSample.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-datamodel</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.datamodel.impl</a> &gt; <span class="el_source">SimpleSample.java</span></div><h1>SimpleSample.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.datamodel.impl;
+
+import java.io.File;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.base.Preconditions;
+
+import io.github.msdk.datamodel.featuretables.Sample;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+
+/**
+ * Implementation of Sample
+ */
+public class SimpleSample implements Sample {
+
+  private @Nonnull String name;
+  private RawDataFile rawDataFile;
+  private File originalFile;
+
+  /**
+   * &lt;p&gt;Constructor for SimpleSample.&lt;/p&gt;
+   *
+   * @param name a {@link java.lang.String} object.
+   */
+  public SimpleSample(@Nonnull String name) {
+<span class="nc" id="L41">    this(name, null);</span>
+<span class="nc" id="L42">  }</span>
+
+  /**
+   * &lt;p&gt;Constructor for SimpleSample.&lt;/p&gt;
+   *
+   * @param name a {@link java.lang.String} object.
+   * @param rawDataFile a {@link io.github.msdk.datamodel.rawdata.RawDataFile} object.
+   */
+<span class="nc" id="L50">  public SimpleSample(@Nonnull String name, @Nullable RawDataFile rawDataFile) {</span>
+<span class="nc" id="L51">    Preconditions.checkNotNull(name);</span>
+<span class="nc" id="L52">    this.name = name;</span>
+<span class="nc" id="L53">    this.rawDataFile = rawDataFile;</span>
+<span class="nc" id="L54">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public @Nonnull String getName() {
+<span class="nc" id="L59">    return name;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param name a {@link java.lang.String} object.
+   */
+  public void setName(@Nonnull String name) {
+<span class="nc" id="L68">    Preconditions.checkNotNull(name);</span>
+<span class="nc" id="L69">    this.name = name;</span>
+<span class="nc" id="L70">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public @Nullable RawDataFile getRawDataFile() {
+<span class="nc" id="L75">    return rawDataFile;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param rawDataFile a {@link io.github.msdk.datamodel.rawdata.RawDataFile} object.
+   */
+  public void setRawDataFile(@Nullable RawDataFile rawDataFile) {
+<span class="nc" id="L84">    this.rawDataFile = rawDataFile;</span>
+<span class="nc" id="L85">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  public @Nullable File getOriginalFile() {
+<span class="nc" id="L90">    return originalFile;</span>
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @param originalFile a {@link java.io.File} object.
+   */
+  public void setOriginalFile(@Nullable File originalFile) {
+<span class="nc" id="L99">    this.originalFile = originalFile;</span>
+<span class="nc" id="L100">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileWriterTest (Sep 3, 2017 7:32:27 PM)</div></body></html>

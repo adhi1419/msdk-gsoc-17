@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MzMLChromatogram.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=2;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</a> &gt; <a href="../../index.html" class="el_group">msdk-io-mzml</a> &gt; <a href="../index.html" class="el_bundle">src/main/java</a> &gt; <a href="index.source.html" class="el_package">io.github.msdk.io.mzml.data</a> &gt; <span class="el_source">MzMLChromatogram.java</span></div><h1>MzMLChromatogram.java</h1><pre class="source lang-java linenums">/*
+ * (C) Copyright 2015-2017 by MSDK Development Team
+ *
+ * This software is dual-licensed under either
+ *
+ * (a) the terms of the GNU Lesser General Public License version 2.1 as published by the Free
+ * Software Foundation
+ *
+ * or (per the licensee's choosing)
+ *
+ * (b) the terms of the Eclipse Public License v1.0 as published by the Eclipse Foundation.
+ */
+
+package io.github.msdk.io.mzml.data;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Range;
+
+import io.github.msdk.MSDKRuntimeException;
+import io.github.msdk.datamodel.chromatograms.Chromatogram;
+import io.github.msdk.datamodel.chromatograms.ChromatogramType;
+import io.github.msdk.datamodel.impl.SimpleActivationInfo;
+import io.github.msdk.datamodel.impl.SimpleIsolationInfo;
+import io.github.msdk.datamodel.ionannotations.IonAnnotation;
+import io.github.msdk.datamodel.rawdata.ActivationInfo;
+import io.github.msdk.datamodel.rawdata.ActivationType;
+import io.github.msdk.datamodel.rawdata.IsolationInfo;
+import io.github.msdk.datamodel.rawdata.RawDataFile;
+import io.github.msdk.datamodel.rawdata.SeparationType;
+import io.github.msdk.io.mzml.MzMLFileImportMethod;
+
+class MzMLChromatogram implements Chromatogram {
+
+  private final @Nonnull MzMLRawDataFile dataFile;
+  private @Nonnull InputStream inputStream;
+  private final @Nonnull String chromatogramId;
+  private final @Nonnull Integer chromatogramNumber;
+  private final @Nonnull Integer numOfDataPoints;
+
+  private MzMLCVGroup cvParams;
+  private MzMLPrecursorElement precursor;
+  private MzMLProduct product;
+  private MzMLBinaryDataInfo rtBinaryDataInfo;
+  private MzMLBinaryDataInfo intensityBinaryDataInfo;
+  private ChromatogramType chromatogramType;
+  private Double mz;
+  private SeparationType separationType;
+  private Range&lt;Float&gt; rtRange;
+  private float[] rtValues;
+  private float[] intensityValues;
+
+<span class="fc" id="L63">  private Logger logger = LoggerFactory.getLogger(MzMLFileImportMethod.class);</span>
+
+  /**
+   * &lt;p&gt;
+   * Constructor for {@link io.github.msdk.io.mzml.data.MzMLChromatogram MzMLChromatogram}
+   * &lt;/p&gt;
+   * 
+   * @param dataFile a {@link io.github.msdk.io.mzml.data.MzMLRawDataFile MzMLRawDataFile} object
+   *        the parser stores the data in
+   * @param is an {@link java.io.InputStream InputStream} of the MzML format data
+   * @param chromatogramId the Chromatogram ID
+   * @param chromatogramNumber the Chromatogram number
+   * @param numOfDataPoints the number of data points in the retention time and intensity arrays
+   */
+<span class="fc" id="L77">  MzMLChromatogram(@Nonnull MzMLRawDataFile dataFile, InputStream is, String chromatogramId,</span>
+      Integer chromatogramNumber, Integer numOfDataPoints) {
+<span class="fc" id="L79">    this.cvParams = new MzMLCVGroup();</span>
+<span class="fc" id="L80">    this.dataFile = dataFile;</span>
+<span class="fc" id="L81">    this.inputStream = is;</span>
+<span class="fc" id="L82">    this.chromatogramId = chromatogramId;</span>
+<span class="fc" id="L83">    this.chromatogramNumber = chromatogramNumber;</span>
+<span class="fc" id="L84">    this.numOfDataPoints = numOfDataPoints;</span>
+<span class="fc" id="L85">    this.separationType = SeparationType.UNKNOWN;</span>
+<span class="fc" id="L86">    this.rtBinaryDataInfo = null;</span>
+<span class="fc" id="L87">    this.intensityBinaryDataInfo = null;</span>
+<span class="fc" id="L88">    this.chromatogramType = ChromatogramType.UNKNOWN;</span>
+<span class="fc" id="L89">    this.mz = null;</span>
+<span class="fc" id="L90">    this.rtRange = null;</span>
+<span class="fc" id="L91">    this.rtValues = null;</span>
+<span class="fc" id="L92">    this.intensityValues = null;</span>
+
+<span class="fc" id="L94">  }</span>
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public RawDataFile getRawDataFile() {
+<span class="nc" id="L100">    return dataFile;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public Integer getChromatogramNumber() {
+<span class="fc" id="L107">    return chromatogramNumber;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * getCVParams.
+   * &lt;/p&gt;
+   *
+   * @return a {@link java.util.ArrayList} object.
+   */
+  public MzMLCVGroup getCVParams() {
+<span class="fc" id="L118">    return cvParams;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Getter for the field &lt;code&gt;mzBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public MzMLBinaryDataInfo getRtBinaryDataInfo() {
+<span class="fc" id="L129">    return rtBinaryDataInfo;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Setter for the field &lt;code&gt;mzBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @param rtBinaryDataInfo a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public void setRtBinaryDataInfo(MzMLBinaryDataInfo rtBinaryDataInfo) {
+<span class="fc" id="L140">    this.rtBinaryDataInfo = rtBinaryDataInfo;</span>
+<span class="fc" id="L141">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Getter for the field &lt;code&gt;intensityBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public MzMLBinaryDataInfo getIntensityBinaryDataInfo() {
+<span class="fc" id="L151">    return intensityBinaryDataInfo;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Setter for the field &lt;code&gt;intensityBinaryDataInfo&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @param intensityBinaryDataInfo a {@link io.github.msdk.io.mzml.data.MzMLBinaryDataInfo} object.
+   */
+  public void setIntensityBinaryDataInfo(MzMLBinaryDataInfo intensityBinaryDataInfo) {
+<span class="fc" id="L162">    this.intensityBinaryDataInfo = intensityBinaryDataInfo;</span>
+<span class="fc" id="L163">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * getInputStream.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml2.util.io.ByteBufferInputStream} object.
+   */
+  public InputStream getInputStream() {
+<span class="nc" id="L173">    return inputStream;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * setInputStream.
+   * &lt;/p&gt;
+   *
+   * @param inputStream a {@link java.io.InputStream} object.
+   */
+  public void setInputStream(InputStream inputStream) {
+<span class="nc" id="L184">    this.inputStream = inputStream;</span>
+<span class="nc" id="L185">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * getPrecursor.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLPrecursorElement} object.
+   */
+  public MzMLPrecursorElement getPrecursor() {
+<span class="fc" id="L195">    return precursor;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Setter for the field &lt;code&gt;precursor&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @param precursor a {@link io.github.msdk.io.mzml.data.MzMLPrecursorElement} object.
+   */
+  public void setPrecursor(MzMLPrecursorElement precursor) {
+<span class="fc" id="L206">    this.precursor = precursor;</span>
+<span class="fc" id="L207">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * getProduct.
+   * &lt;/p&gt;
+   *
+   * @return a {@link io.github.msdk.io.mzml.data.MzMLProduct} object.
+   */
+  public MzMLProduct getProduct() {
+<span class="fc" id="L217">    return product;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Setter for the field &lt;code&gt;precursor&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @param product a {@link io.github.msdk.io.mzml.data.MzMLProduct} object.
+   */
+  public void setProdcut(MzMLProduct product) {
+<span class="fc" id="L228">    this.product = product;</span>
+<span class="fc" id="L229">  }</span>
+
+  /**
+   * &lt;p&gt;
+   * Getter for the field &lt;code&gt;chromatogramId&lt;/code&gt;.
+   * &lt;/p&gt;
+   *
+   * @return a {@link java.lang.String} object.
+   */
+  public String getId() {
+<span class="nc" id="L239">    return chromatogramId;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public ChromatogramType getChromatogramType() {
+<span class="fc bfc" id="L246" title="All 2 branches covered.">    if (chromatogramType != ChromatogramType.UNKNOWN)</span>
+<span class="fc" id="L247">      return chromatogramType;</span>
+
+<span class="fc" id="L249">    int count = 0;</span>
+
+<span class="fc bfc" id="L251" title="All 2 branches covered.">    if (getCVValue(MzMLCV.cvChromatogramTIC).isPresent()) {</span>
+<span class="fc" id="L252">      chromatogramType = ChromatogramType.TIC;</span>
+<span class="fc" id="L253">      count++;</span>
+    }
+<span class="fc bfc" id="L255" title="All 2 branches covered.">    if (getCVValue(MzMLCV.cvChromatogramMRM_SRM).isPresent()) {</span>
+<span class="fc" id="L256">      chromatogramType = ChromatogramType.MRM_SRM;</span>
+<span class="fc" id="L257">      count++;</span>
+    }
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">    if (getCVValue(MzMLCV.cvChromatogramSIC).isPresent()) {</span>
+<span class="nc" id="L260">      chromatogramType = ChromatogramType.SIC;</span>
+<span class="nc" id="L261">      count++;</span>
+    }
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">    if (getCVValue(MzMLCV.cvChromatogramBPC).isPresent()) {</span>
+<span class="nc" id="L264">      chromatogramType = ChromatogramType.BPC;</span>
+<span class="nc" id="L265">      count++;</span>
+    }
+
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">    if (count &gt; 1) {</span>
+<span class="nc" id="L269">      logger.error(&quot;More than one chromatogram type defined by CV terms not allowed&quot;);</span>
+<span class="nc" id="L270">      chromatogramType = ChromatogramType.UNKNOWN;</span>
+    }
+
+<span class="fc" id="L273">    return chromatogramType;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public Double getMz() {
+    // Set mz value only if it hasn't been fetched before
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">    if (mz == null) {</span>
+      // Try getting the mz value from the product isolation window
+      // set mz value to the respective cv value only if the value is present
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">      if (product != null) {</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">        if (product.getIsolationWindow().isPresent()) {</span>
+<span class="fc" id="L286">          Optional&lt;String&gt; cvval =</span>
+<span class="fc" id="L287">              getCVValue(product.getIsolationWindow().get(), MzMLCV.cvIsolationWindowTarget);</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">          if (cvval.isPresent())</span>
+<span class="fc" id="L289">            mz = Double.valueOf(cvval.get());</span>
+        }
+      }
+    }
+<span class="fc" id="L293">    return mz;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public List&lt;IsolationInfo&gt; getIsolations() {
+<span class="fc bfc" id="L300" title="All 2 branches covered.">    if (getChromatogramType() == ChromatogramType.MRM_SRM) {</span>
+
+<span class="fc" id="L302">      Optional&lt;MzMLIsolationWindow&gt; precursorIsolationWindow = getPrecursor().getIsolationWindow();</span>
+<span class="fc" id="L303">      Optional&lt;MzMLIsolationWindow&gt; productIsolationWindow = getProduct().getIsolationWindow();</span>
+
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">      if (!precursorIsolationWindow.isPresent()) {</span>
+<span class="nc" id="L306">        logger.error(&quot;Couldn't find precursor isolation window for chromotgram (#&quot;</span>
+<span class="nc" id="L307">            + getChromatogramNumber() + &quot;)&quot;);</span>
+<span class="nc" id="L308">        return Collections.emptyList();</span>
+      }
+
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">      if (!productIsolationWindow.isPresent()) {</span>
+<span class="nc" id="L312">        logger.error(&quot;Couldn't find product isolation window for chromotgram (#&quot;</span>
+<span class="nc" id="L313">            + getChromatogramNumber() + &quot;)&quot;);</span>
+<span class="nc" id="L314">        return Collections.emptyList();</span>
+      }
+
+<span class="fc" id="L317">      Optional&lt;String&gt; precursorIsolationMz =</span>
+<span class="fc" id="L318">          getCVValue(precursorIsolationWindow.get(), MzMLCV.cvIsolationWindowTarget);</span>
+<span class="fc" id="L319">      Optional&lt;String&gt; precursorActivationEnergy =</span>
+<span class="fc" id="L320">          getCVValue(getPrecursor().getActivation(), MzMLCV.cvActivationEnergy);</span>
+<span class="fc" id="L321">      Optional&lt;String&gt; productIsolationMz =</span>
+<span class="fc" id="L322">          getCVValue(productIsolationWindow.get(), MzMLCV.cvIsolationWindowTarget);</span>
+<span class="fc" id="L323">      ActivationType precursorActivation = ActivationType.UNKNOWN;</span>
+<span class="fc" id="L324">      ActivationInfo activationInfo = null;</span>
+
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">      if (getCVValue(getPrecursor().getActivation(), MzMLCV.cvActivationCID).isPresent())</span>
+<span class="fc" id="L327">        precursorActivation = ActivationType.CID;</span>
+
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">      if (precursorActivationEnergy != null) {</span>
+<span class="fc" id="L330">        activationInfo = new SimpleActivationInfo(Double.valueOf(precursorActivationEnergy.get()),</span>
+<span class="fc" id="L331">            precursorActivation);</span>
+      }
+
+<span class="fc" id="L334">      List&lt;IsolationInfo&gt; isolations = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L335">      IsolationInfo isolationInfo = null;</span>
+
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">      if (precursorIsolationMz.isPresent()) {</span>
+<span class="fc" id="L338">        isolationInfo =</span>
+<span class="fc" id="L339">            new SimpleIsolationInfo(Range.singleton(Double.valueOf(precursorIsolationMz.get())),</span>
+<span class="fc" id="L340">                null, Double.valueOf(precursorIsolationMz.get()), null, activationInfo);</span>
+<span class="fc" id="L341">        isolations.add(isolationInfo);</span>
+      }
+
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">      if (productIsolationMz.isPresent()) {</span>
+<span class="fc" id="L345">        isolationInfo =</span>
+<span class="fc" id="L346">            new SimpleIsolationInfo(Range.singleton(Double.valueOf(productIsolationMz.get())), null,</span>
+<span class="fc" id="L347">                Double.valueOf(productIsolationMz.get()), null, null);</span>
+<span class="fc" id="L348">        isolations.add(isolationInfo);</span>
+      }
+
+<span class="fc" id="L351">      return Collections.unmodifiableList(isolations);</span>
+    }
+
+<span class="fc" id="L354">    return Collections.emptyList();</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public SeparationType getSeparationType() {
+<span class="nc" id="L361">    return separationType;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public IonAnnotation getIonAnnotation() {
+<span class="nc" id="L367">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public Integer getNumberOfDataPoints() {
+<span class="fc" id="L374">    return numOfDataPoints;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public float[] getRetentionTimes(@Nullable float array[]) {
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">    if (rtValues == null) {</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">      if (getRtBinaryDataInfo().getArrayLength() != numOfDataPoints) {</span>
+<span class="nc" id="L383">        logger.warn(</span>
+<span class="nc" id="L384">            &quot;Retention time binary data array contains a different array length from the default array length of the scan (#&quot;</span>
+<span class="nc" id="L385">                + getChromatogramNumber() + &quot;)&quot;);</span>
+      }
+
+      try {
+<span class="fc" id="L389">        rtValues = MzMLPeaksDecoder.decodeToFloat(inputStream, getRtBinaryDataInfo(), array);</span>
+<span class="pc" id="L390">      } catch (Exception e) {</span>
+<span class="nc" id="L391">        throw (new MSDKRuntimeException(e));</span>
+      }
+    }
+
+<span class="pc bpc" id="L395" title="3 of 4 branches missed.">    if (array == null || array.length &lt; numOfDataPoints) {</span>
+<span class="fc" id="L396">      array = new float[numOfDataPoints];</span>
+
+<span class="fc" id="L398">      System.arraycopy(rtValues, 0, array, 0, numOfDataPoints);</span>
+    }
+
+<span class="fc" id="L401">    return array;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nonnull
+  public float[] getIntensityValues(@Nullable float[] array) {
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">    if (intensityValues == null) {</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">      if (getIntensityBinaryDataInfo().getArrayLength() != numOfDataPoints) {</span>
+<span class="nc" id="L410">        logger.warn(</span>
+<span class="nc" id="L411">            &quot;Intensity binary data array contains a different array length from the default array length of the chromatogram (#&quot;</span>
+<span class="nc" id="L412">                + getChromatogramNumber() + &quot;)&quot;);</span>
+      }
+
+      try {
+<span class="fc" id="L416">        intensityValues =</span>
+<span class="fc" id="L417">            MzMLPeaksDecoder.decodeToFloat(inputStream, getIntensityBinaryDataInfo(), array);</span>
+<span class="pc" id="L418">      } catch (Exception e) {</span>
+<span class="nc" id="L419">        throw (new MSDKRuntimeException(e));</span>
+      }
+    }
+
+<span class="pc bpc" id="L423" title="3 of 4 branches missed.">    if (array == null || array.length &lt; numOfDataPoints) {</span>
+<span class="fc" id="L424">      array = new float[numOfDataPoints];</span>
+
+<span class="fc" id="L426">      System.arraycopy(intensityValues, 0, array, 0, numOfDataPoints);</span>
+    }
+
+<span class="fc" id="L429">    return array;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public double[] getMzValues(@Nullable double array[]) {
+<span class="nc" id="L436">    return null;</span>
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @Nullable
+  public Range&lt;Float&gt; getRtRange() {
+<span class="nc bnc" id="L443" title="All 2 branches missed.">    if (rtRange == null) {</span>
+<span class="nc" id="L444">      float[] rtValues = getRetentionTimes();</span>
+<span class="nc" id="L445">      rtRange = Range.closed(rtValues[0], rtValues[numOfDataPoints - 1]);</span>
+    }
+<span class="nc" id="L447">    return rtRange;</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Search for the CV Parameter value for the given accession in the
+   * {@link io.github.msdk.datamodel.chromatograms.Chromatogram Chromatogram}'s CV Parameters
+   * &lt;/p&gt;
+   *
+   * @param accession the CV Parameter accession as {@link java.lang.String String}
+   * @return an {@link java.util.Optional Optional&lt;String&gt;} containing the CV Parameter value for
+   *         the given accession, if present &lt;br&gt;
+   *         An empty {@link java.util.Optional Optional&lt;String&gt;} otherwise
+   */
+  public Optional&lt;String&gt; getCVValue(String accession) {
+<span class="fc" id="L462">    return getCVValue(cvParams, accession);</span>
+  }
+
+  /**
+   * &lt;p&gt;
+   * Search for the CV Parameter value for the given accession in the given
+   * {@link io.github.msdk.io.mzml.data.MzMLCVGroup MzMLCVGroup}
+   * &lt;/p&gt;
+   *
+   * @param group the {@link io.github.msdk.io.mzml.data.MzMLCVGroup MzMLCVGroup} to search through
+   * @param accession the CV Parameter accession as {@link java.lang.String String}
+   * @return an {@link java.util.Optional Optional&lt;String&gt;} containing the CV Parameter value for
+   *         the given accession, if present &lt;br&gt;
+   *         An empty {@link java.util.Optional Optional&lt;String&gt;} otherwise
+   */
+  public Optional&lt;String&gt; getCVValue(MzMLCVGroup group, String accession) {
+    Optional&lt;String&gt; value;
+<span class="fc bfc" id="L479" title="All 2 branches covered.">    for (MzMLCVParam cvParam : group.getCVParamsList()) {</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">      if (cvParam.getAccession().equals(accession)) {</span>
+<span class="fc" id="L481">        value = cvParam.getValue();</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">        if (!value.isPresent())</span>
+<span class="fc" id="L483">          value = Optional.of(&quot;&quot;);</span>
+<span class="fc" id="L484">        return value;</span>
+      }
+    }
+<span class="fc" id="L487">    return Optional.empty();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span>MzMLFileParserTest (Sep 3, 2017 7:11:53 PM)</div></body></html>
